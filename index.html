@@ -58,10 +58,25 @@ button{font:inherit;color:inherit;cursor:pointer}
 .search input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:9px 12px;font:inherit;font-size:.92rem}
 .search input::placeholder{color:var(--muted)}
 
-/* Índice de tipos */
-.index{display:flex;flex-wrap:wrap;gap:6px 14px;padding-block:18px 4px;font-size:.85rem}
-.index button{border:0;background:none;padding:2px 0;color:var(--muted);border-bottom:1px solid transparent}
-.index button:hover{color:var(--ink);border-bottom-color:var(--gold)}
+/* Barra de filtro por tipo */
+.index{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-block:18px 0;font-size:.85rem}
+.fbtn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--ink);background:var(--bg);border-radius:999px;padding:8px 16px;font-size:.88rem;font-weight:500}
+.fbtn svg{width:16px;height:16px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--gold);background:var(--gold-soft);border-radius:999px;padding:7px 12px;font-size:.85rem}
+.chip b{font-weight:600}
+.chip span{font-size:1rem;line-height:1;color:var(--muted)}
+/* Panel lateral de tipos */
+#types{margin:0 auto 0 0;height:100dvh;max-height:100dvh;width:min(320px,86vw);border-radius:0 var(--r) var(--r) 0;padding:0;background:var(--surface);color:var(--ink);overflow-y:auto}
+#types::backdrop{background:rgba(25,12,20,.45)}
+.tp-head{display:flex;justify-content:space-between;align-items:center;padding:calc(18px + env(safe-area-inset-top,0px)) 18px 12px max(18px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+.tp-head h3{margin:0;font-family:var(--font-display);font-size:1.5rem;font-weight:600}
+.tp-head button{border:0;background:none;font-size:1.4rem;line-height:1;padding:4px 8px}
+.tp-list{display:flex;flex-direction:column;padding:8px 0 calc(16px + env(safe-area-inset-bottom,0px))}
+.tp-list button{display:flex;justify-content:space-between;align-items:center;gap:12px;border:0;background:none;text-align:left;padding:12px 18px 12px max(18px,env(safe-area-inset-left,0px));font-size:.95rem}
+.tp-list button:hover{background:var(--photo)}
+.tp-list button small{color:var(--muted);font-variant-numeric:tabular-nums}
+.tp-list button[aria-current="true"]{font-weight:600;color:var(--rose-ink)}
+.tp-list button[aria-current="true"]{background:var(--gold-soft)}
 .subs{display:flex;gap:6px;padding-top:16px;flex-wrap:wrap}
 .sub{border:1px solid var(--line);background:none;border-radius:8px;padding:5px 12px;font-size:.85rem}
 .sub[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--ink)}
@@ -173,6 +188,7 @@ html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}
 </footer>
 
 <dialog id="dlg" aria-labelledby="dname"></dialog>
+<dialog id="types" aria-labelledby="tptitle"></dialog>
 
 <script src="productos.js"></script>
 <script>
@@ -211,16 +227,17 @@ function groupOf(p){
 const LABELS={caiman:'Caimanes',banana:'Bananas',espejo:'Espejos',pinza:'Pinzas',anillo:'Anillos',arete:'Aretes',topo:'Topos',llavero:'Llaveros',monedero:'Monederos',balaca:'Balacas',diadema:'Diademas',mono:'Moños',cola:'Colas',colita:'Colitas',scrunchie:'Scrunchies',cepillo:'Cepillos',liga:'Ligas',billetera:'Billeteras',carriel:'Carrieles',bolso:'Bolsos',canguro:'Canguros',morral:'Morrales',cosmetiquera:'Cosmetiqueras',estuche:'Estuches',pulsera:'Pulseras',cadena:'Cadenas',candonga:'Candongas',set:'Sets',trio:'Tríos',tobillera:'Tobilleras',aro:'Aros',rosario:'Rosarios',collar:'Collares',base:'Bases',rubor:'Rubores',brocha:'Brochas',tinta:'Tintas',balsamo:'Bálsamos labiales',polvo:'Polvos',corrector:'Correctores',fijador:'Fijadores',serum:'Sérums',crema:'Cremas',mascarilla:'Mascarillas',lip:'Lip gloss',termo:'Termos',tapa:'Tapa ojos',pony:'Pony cuffs',mini:'Mini',parche:'Parches',splash:'Splash',mantequilla:'Mantequillas',pestanina:'Pestañinas',delineador:'Delineadores',iluminador:'Iluminadores',sombra:'Sombras',paleta:'Paletas',kit:'Kits',primer:'Primers',limpiador:'Limpiadores',contorno:'Contorno de ojos',beauty:'Beauty blenders',brillo:'Brillos labiales',cubierta:'Cubiertas',moño:'Moños'};
 ALL.forEach(p=>{const g=groupOf(p);p.g=g.key;p.gl=p.cat==='perfumeria'?g.label:(LABELS[g.key]||g.label);p.s=strip(p.name+' '+(p.desc||'')+' '+p.gl)});
 
-let state={cat:'accesorios',q:'',sub:'Todos'};
+let state={cat:'accesorios',q:'',sub:'Todos',type:null};
 try{const h=location.hash.slice(1);if(CATS.some(c=>c.id===h))state.cat=h;}catch(e){}
 
 const $=s=>document.querySelector(s);
-const tabs=$('#tabs'),list=$('#list'),index=$('#index'),subs=$('#subs'),q=$('#q'),dlg=$('#dlg');
+const tabs=$('#tabs'),list=$('#list'),index=$('#index'),subs=$('#subs'),q=$('#q'),dlg=$('#dlg'),types=$('#types');
+let lastGroups=[];
 
 function renderTabs(){
   tabs.innerHTML=CATS.map(c=>`<button class="tab" role="tab" aria-selected="${!state.q&&state.cat===c.id}" data-c="${c.id}">${c.label}<small>${ALL.filter(p=>p.cat===c.id).length}</small></button>`).join('');
 }
-tabs.addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;state.cat=b.dataset.c;state.q='';state.sub='Todos';q.value='';try{history.replaceState(null,'','#'+state.cat)}catch(_){};render();window.scrollTo({top:0})});
+tabs.addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;state.cat=b.dataset.c;state.q='';state.sub='Todos';state.type=null;q.value='';try{history.replaceState(null,'','#'+state.cat)}catch(_){};render();window.scrollTo({top:0})});
 q.addEventListener('input',()=>{state.q=q.value.trim();render()});
 
 function priceBlock(p){
@@ -249,14 +266,33 @@ function render(){
     if(state.sub!=='Todos') items=items.filter(p=>p.sub===state.sub);
   }else subs.hidden=true;
   items.sort((a,b)=>col.compare(a.gl,b.gl)||col.compare(a.name,b.name));
-  const groups=[];
+  let groups=[];
   items.forEach(p=>{const key=(state.q?p.cat+':':'')+p.g;let g=groups[groups.length-1];if(!g||g.key!==key){g={key,label:p.gl,cat:p.cat,items:[]};groups.push(g)}g.items.push(p)});
   if(!items.length){index.innerHTML='';list.innerHTML=`<p class="empty">No encontramos productos para “${state.q.replace(/[<>]/g,'')}”. Prueba con otra palabra.</p>`;return}
-  index.innerHTML=state.q?`<span class="hint">${items.length} resultados en todo el catálogo</span>`:groups.map((g,i)=>`<button data-g="${i}">${g.label}</button>`).join('');
+  lastGroups=groups;
+  if(state.q){index.innerHTML=`<span class="hint">${items.length} resultados en todo el catálogo</span>`}
+  else{
+    const act=groups.find(g=>g.key===state.type);
+    if(!act) state.type=null; else groups=[act];
+    index.innerHTML=`<button class="fbtn" id="openTypes" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filtrar por tipo</button>`+(act?`<button class="chip" id="clearType" aria-label="Quitar filtro ${act.label}"><b>${act.label}</b><span>×</span></button>`:'');
+  }
   list.innerHTML=groups.map((g,i)=>`<section class="group" id="g${i}"><h2>${g.label}${state.q?` <span>${CATS.find(c=>c.id===g.cat).label}</span>`:` <span>${g.items.length}</span>`}</h2><div class="grid">${g.items.map(card).join('')}</div></section>`).join('');
 }
 subs.addEventListener('click',e=>{const b=e.target.closest('.sub');if(!b)return;state.sub=b.dataset.s;render()});
-index.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;document.getElementById('g'+b.dataset.g).scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})});
+function openTypes(){
+  types.innerHTML=`<div class="tp-head"><h3 id="tptitle">${CATS.find(c=>c.id===state.cat).label}</h3><button aria-label="Cerrar">×</button></div>
+  <div class="tp-list"><button data-t="" aria-current="${!state.type}">Ver todo<small>${lastGroups.reduce((n,g)=>n+g.items.length,0)}</small></button>${lastGroups.map(g=>`<button data-t="${g.key}" aria-current="${state.type===g.key}">${g.label}<small>${g.items.length}</small></button>`).join('')}</div>`;
+  types.showModal();
+}
+index.addEventListener('click',e=>{
+  if(e.target.closest('#openTypes')) openTypes();
+  else if(e.target.closest('#clearType')){state.type=null;render()}
+});
+types.addEventListener('click',e=>{
+  if(e.target===types||e.target.closest('.tp-head button')){types.close();return}
+  const b=e.target.closest('.tp-list button');if(!b)return;
+  state.type=b.dataset.t||null;types.close();render();window.scrollTo({top:0});
+});
 
 list.addEventListener('click',e=>{const c=e.target.closest('.card');if(c)openDetail(ALL[+c.dataset.i])});
 function openDetail(p){
