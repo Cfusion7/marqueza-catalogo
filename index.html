@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Catálogo de Marqueza Accesorios, Bucaramanga: accesorios, bolsos, maquillaje, rodio y covergold y perfumería, con precios al mayor y al detal.">
+<link rel="icon" href="logo.webp">
+<title>Catálogo Marqueza</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Poppins:wght@400;500;600&display=swap">
+<style>
+/* Layout: encabezado con logo, pestañas de 5 categorías, índice de tipos de producto y rejilla de tarjetas agrupadas alfabéticamente */
+:root{
+  --bg:#ffffff;          /* fondo blanco */
+  --surface:#ffffff;
+  --photo:#ffffff;
+  --ink:#3a2431;         /* ciruela profundo */
+  --muted:#7d6573;
+  --line:#ecdde4;
+  --rose:#f6c3df;        /* rosa del logo */
+  --rose-ink:#9c3d6e;
+  --gold:#a7782a;        /* dorado del logo */
+  --gold-soft:#f3e6cc;
+  --font-brand:"Cinzel","Trajan Pro",Georgia,serif;
+  --font-display:"Cormorant Garamond",Georgia,"Times New Roman",serif;
+  --font-body:"Poppins",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:14px;
+}
+:root{color-scheme:light}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* Encabezado */
+.top{background:var(--bg);border-bottom:3px solid var(--rose)}
+.top .wrap{display:flex;align-items:center;gap:14px;padding-block:18px}
+.top img{width:64px;height:64px;border-radius:50%;flex:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 45%,transparent)}
+.brand{min-width:0}
+.brand h1{margin:0;font-family:var(--font-brand);font-weight:600;font-size:clamp(1.25rem,4.6vw,1.75rem);letter-spacing:.06em;color:var(--ink);line-height:1.15}
+.brand p{margin:2px 0 0;font-size:.82rem;color:var(--rose-ink)}
+.brand a{color:inherit;text-decoration-color:color-mix(in srgb,currentColor 40%,transparent);text-underline-offset:3px}
+
+/* Barra fija: pestañas + búsqueda */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;flex-direction:column;gap:10px;padding-block:10px}
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-inline:-4px;padding-inline:4px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-size:.88rem;font-weight:500;white-space:nowrap;display:flex;gap:6px;align-items:baseline}
+.tab small{color:var(--muted);font-weight:400;font-variant-numeric:tabular-nums}
+.tab[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.tab[aria-selected="true"] small{color:color-mix(in srgb,var(--bg) 70%,transparent)}
+.search{display:flex;gap:8px}
+.search input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:9px 12px;font:inherit;font-size:.92rem}
+.search input::placeholder{color:var(--muted)}
+
+/* Índice de tipos */
+.index{display:flex;flex-wrap:wrap;gap:6px 14px;padding-block:18px 4px;font-size:.85rem}
+.index button{border:0;background:none;padding:2px 0;color:var(--muted);border-bottom:1px solid transparent}
+.index button:hover{color:var(--ink);border-bottom-color:var(--gold)}
+.subs{display:flex;gap:6px;padding-top:16px;flex-wrap:wrap}
+.sub{border:1px solid var(--line);background:none;border-radius:8px;padding:5px 12px;font-size:.85rem}
+.sub[aria-pressed="true"]{background:var(--gold-soft);border-color:var(--gold);color:var(--ink)}
+
+/* Grupos */
+main{padding-bottom:48px}
+.group{padding-top:28px;scroll-margin-top:150px}
+.group h2{display:flex;align-items:baseline;gap:10px;margin:0 0 14px;font-family:var(--font-display);font-weight:600;font-size:1.65rem;line-height:1.1;text-wrap:balance}
+.group h2 span{font-family:var(--font-body);font-size:.75rem;font-weight:500;color:var(--gold);letter-spacing:.08em;text-transform:uppercase}
+.group h2::after{content:"";flex:1;height:1px;background:var(--line);align-self:center}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (min-width:640px){.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}}
+@media (min-width:980px){.grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}}
+
+/* Tarjeta */
+.card{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;text-align:left;padding:0;min-width:0}
+.card:hover{border-color:color-mix(in srgb,var(--gold) 55%,var(--line))}
+.ph{position:relative;aspect-ratio:4/5;background:var(--photo);max-width:100%;border-bottom:1px solid var(--line)}
+.ph img{width:100%;height:100%;object-fit:contain;display:block}
+.ph .n{position:absolute;right:8px;bottom:8px;background:color-mix(in srgb,var(--ink) 78%,transparent);color:var(--bg);font-size:.7rem;padding:2px 7px;border-radius:999px}
+.body{display:flex;flex-direction:column;gap:6px;padding:10px 12px 12px;flex:1;min-width:0}
+.name{font-weight:500;font-size:.9rem;line-height:1.3}
+.desc{font-size:.78rem;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.prices{margin-top:auto;padding-top:6px;display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums}
+.pr{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:.78rem;color:var(--muted)}
+.pr b{font-size:.98rem;font-weight:600;color:var(--ink)}
+.pr.main b{font-size:1.05rem}
+.from{font-size:.72rem;color:var(--muted)}
+.tag{align-self:flex-start;font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--rose-ink);background:color-mix(in srgb,var(--rose) 45%,transparent);padding:1px 7px;border-radius:5px}
+
+.empty{padding:48px 0;text-align:center;color:var(--muted)}
+
+/* Detalle */
+dialog{border:0;padding:0;width:min(920px,100vw);max-width:100vw;max-height:100dvh;background:var(--surface);color:var(--ink);border-radius:var(--r)}
+dialog::backdrop{background:rgba(25,12,20,.55)}
+@media (max-width:640px){dialog{margin:auto 0 0;width:100vw;border-radius:var(--r) var(--r) 0 0;max-height:92dvh}}
+.dl{display:grid;grid-template-columns:1fr;gap:0}
+@media (min-width:720px){.dl{grid-template-columns:1.1fr 1fr}}
+.gal{background:var(--photo);position:relative}
+.gal img{width:100%;aspect-ratio:4/5;object-fit:contain;display:block}
+.thumbs{display:flex;gap:6px;padding:8px;overflow-x:auto}
+.thumbs button{flex:none;width:54px;height:66px;border:2px solid transparent;border-radius:8px;padding:0;background:var(--surface);overflow:hidden}
+.thumbs button[aria-current="true"]{border-color:var(--gold)}
+.thumbs img{width:100%;height:100%;object-fit:cover}
+.info{padding:20px max(20px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) 20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.info h3{margin:0;font-family:var(--font-display);font-size:1.75rem;font-weight:600;line-height:1.1;text-wrap:balance}
+.info p{margin:0;color:var(--muted);font-size:.9rem}
+.ptable{border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.ptable div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.ptable b{font-weight:600}
+.hint{font-size:.78rem;color:var(--muted)}
+.close{position:absolute;top:10px;right:10px;width:38px;height:38px;border-radius:50%;border:0;background:color-mix(in srgb,var(--surface) 88%,transparent);font-size:1.2rem;line-height:1;z-index:2}
+
+/* Pie */
+footer{border-top:1px solid var(--line);background:var(--surface)}
+footer .wrap{display:grid;gap:22px;padding-block:28px calc(28px + env(safe-area-inset-bottom,0px));grid-template-columns:1fr}
+@media (min-width:720px){footer .wrap{grid-template-columns:1fr 1.3fr}}
+footer h4{margin:0 0 8px;font-family:var(--font-brand);font-size:.85rem;letter-spacing:.1em;font-weight:600}
+footer p,footer li{margin:0;font-size:.85rem;color:var(--muted)}
+footer ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+footer a{color:var(--ink)}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .2s}}
+
+html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <img src="logo.webp" alt="Marqueza Accesorios" width="64" height="64">
+    <div class="brand">
+      <h1>Marqueza Accesorios</h1>
+      <p><a href="https://www.google.com/maps/search/?api=1&query=Carrera+15+%2334-15+Bucaramanga+Santander" target="_blank" rel="noopener">Carrera 15 #34-15, Bucaramanga</a> · Ventas al mayor y al detal</p>
+    </div>
+  </div>
+</header>
+
+<nav class="bar" aria-label="Categorías">
+  <div class="wrap">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div class="search"><input id="q" type="search" placeholder="Buscar en todo el catálogo (ej. caimán, topos, Lattafa)" autocomplete="off" aria-label="Buscar producto"></div>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div id="subs" class="subs" hidden></div>
+  <div id="index" class="index" aria-label="Tipos de producto"></div>
+  <div id="list"></div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <h4>MARQUEZA ACCESORIOS</h4>
+      <p>Carrera 15 #34-15, Bucaramanga, Santander</p>
+      <p>Instagram: @Marqueza.accesoriosbga</p>
+    </div>
+    <div>
+      <h4>COMPRAS AL POR MAYOR</h4>
+      <ul>
+        <li>Compra mínima inicial de $100.000 en accesorios, surtida en referencias y colores.</li>
+        <li>Bolsos: mínimo 4 unidades por referencia.</li>
+        <li>Perfumería: mínimo 4 unidades en referencias surtidas.</li>
+        <li>Después de la primera compra al mayor, tus siguientes pedidos no tienen monto mínimo.</li>
+        <li>Precios sujetos a cambio y a disponibilidad.</li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<dialog id="dlg" aria-labelledby="dname"></dialog>
+
+<script src="productos.js"></script>
+<script>
+(function(){
+const CATS=[
+  {id:'accesorios',label:'Accesorios'},
+  {id:'bolsos',label:'Bolsos'},
+  {id:'maquillaje',label:'Maquillaje'},
+  {id:'rodio',label:'Rodio y Covergold'},
+  {id:'perfumeria',label:'Perfumería 1.1'}
+];
+const ALL=window.PRODUCTOS||[];
+const col=new Intl.Collator('es',{sensitivity:'base',numeric:true});
+const fmt=n=>'$'+n.toLocaleString('es-CO');
+const strip=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+
+// Grupo = tipo de producto (primera palabra; plural y singular juntos). Perfumería agrupa por marca.
+const BRANDS=['Al Haramain','Ariana Grande','Britney Spears','Carolina Herrera','Dolce & Gabbana','Giorgio Armani','Hugo Boss','Issey Miyake','Jean Paul Gaultier','Le Labo','Louis Vuitton','Paco Rabanne','Paris Hilton','Parfums de Marly','Perry Ellis','Polo Ralph Lauren','Ralph Lauren','Tommy Hilfiger','Tous LoveMe'];
+function groupOf(p){
+  if(p.cat==='perfumeria'){
+    if(/^Set x/i.test(p.name)) return {key:'sets',label:'Sets de perfumes'};
+    if(/^Perfumeros/.test(p.name)) return {key:'perfumeros',label:'Perfumeros'};
+    const b=BRANDS.find(b=>p.name.startsWith(b+' ')||p.name===b);
+    let lab=b||p.name.split(' ')[0];
+    if(lab==='Tommy'||lab==='Tommy Hilfiger') lab='Tommy Hilfiger';
+    if(lab==='Polo Ralph Lauren') lab='Ralph Lauren';
+    if(lab==='Tous LoveMe') lab='Tous';
+    if(lab==='Rabanne') lab='Paco Rabanne';
+    return {key:strip(lab),label:lab};
+  }
+  const w=p.name.split(' ')[0];
+  let k=strip(w).replace(/s$/,'');
+  if(k==='espejito') k='espejo';
+  return {key:k,label:w};
+}
+const LABELS={caiman:'Caimanes',banana:'Bananas',espejo:'Espejos',pinza:'Pinzas',anillo:'Anillos',arete:'Aretes',topo:'Topos',llavero:'Llaveros',monedero:'Monederos',balaca:'Balacas',diadema:'Diademas',mono:'Moños',cola:'Colas',colita:'Colitas',scrunchie:'Scrunchies',cepillo:'Cepillos',liga:'Ligas',billetera:'Billeteras',carriel:'Carrieles',bolso:'Bolsos',canguro:'Canguros',morral:'Morrales',cosmetiquera:'Cosmetiqueras',estuche:'Estuches',pulsera:'Pulseras',cadena:'Cadenas',candonga:'Candongas',set:'Sets',trio:'Tríos',tobillera:'Tobilleras',aro:'Aros',rosario:'Rosarios',collar:'Collares',base:'Bases',rubor:'Rubores',brocha:'Brochas',tinta:'Tintas',balsamo:'Bálsamos labiales',polvo:'Polvos',corrector:'Correctores',fijador:'Fijadores',serum:'Sérums',crema:'Cremas',mascarilla:'Mascarillas',lip:'Lip gloss',termo:'Termos',tapa:'Tapa ojos',pony:'Pony cuffs',mini:'Mini',parche:'Parches',splash:'Splash',mantequilla:'Mantequillas',pestanina:'Pestañinas',delineador:'Delineadores',iluminador:'Iluminadores',sombra:'Sombras',paleta:'Paletas',kit:'Kits',primer:'Primers',limpiador:'Limpiadores',contorno:'Contorno de ojos',beauty:'Beauty blenders',brillo:'Brillos labiales',cubierta:'Cubiertas',moño:'Moños'};
+ALL.forEach(p=>{const g=groupOf(p);p.g=g.key;p.gl=p.cat==='perfumeria'?g.label:(LABELS[g.key]||g.label);p.s=strip(p.name+' '+(p.desc||'')+' '+p.gl)});
+
+let state={cat:'accesorios',q:'',sub:'Todos'};
+try{const h=location.hash.slice(1);if(CATS.some(c=>c.id===h))state.cat=h;}catch(e){}
+
+const $=s=>document.querySelector(s);
+const tabs=$('#tabs'),list=$('#list'),index=$('#index'),subs=$('#subs'),q=$('#q'),dlg=$('#dlg');
+
+function renderTabs(){
+  tabs.innerHTML=CATS.map(c=>`<button class="tab" role="tab" aria-selected="${!state.q&&state.cat===c.id}" data-c="${c.id}">${c.label}<small>${ALL.filter(p=>p.cat===c.id).length}</small></button>`).join('');
+}
+tabs.addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;state.cat=b.dataset.c;state.q='';state.sub='Todos';q.value='';try{history.replaceState(null,'','#'+state.cat)}catch(_){};render();window.scrollTo({top:0})});
+q.addEventListener('input',()=>{state.q=q.value.trim();render()});
+
+function priceBlock(p){
+  if(p.mayor!=null) return `<div class="pr main"><span>Al mayor</span><b>${fmt(p.mayor)}</b></div><div class="pr"><span>Al detal</span><b>${fmt(p.detal)}</b></div>`;
+  if(p.variants){const min=Math.min(...p.variants.map(v=>v.price));return `<div class="pr main"><span class="from">${p.variants.length} referencias · desde</span><b>${fmt(min)}</b></div>`;}
+  return `<div class="pr main"><span>${p.unit||''}</span><b>${fmt(p.price)}</b></div>`;
+}
+function card(p){
+  const i=ALL.indexOf(p);
+  return `<button class="card" data-i="${i}" aria-label="Ver ${p.name.replace(/"/g,'')}">
+    <div class="ph"><img loading="lazy" decoding="async" src="img/${p.imgs[0]}.webp" alt="">${p.imgs.length>1?`<span class="n">${p.imgs.length} fotos</span>`:''}</div>
+    <div class="body">${p.sub?`<span class="tag">${p.sub}</span>`:''}<div class="name">${p.name}</div>${p.desc?`<div class="desc">${p.desc}</div>`:''}<div class="prices">${priceBlock(p)}</div></div>
+  </button>`;
+}
+function render(){
+  renderTabs();
+  let items;
+  if(state.q){
+    const words=strip(state.q).split(/\s+/).filter(Boolean);
+    items=ALL.filter(p=>words.every(w=>p.s.includes(w)));
+  }else items=ALL.filter(p=>p.cat===state.cat);
+  // subfiltro de perfumería
+  if(!state.q&&state.cat==='perfumeria'){
+    subs.hidden=false;
+    subs.innerHTML=['Todos','Dama','Hombre','Estuches'].map(s=>`<button class="sub" aria-pressed="${state.sub===s}" data-s="${s}">${s}</button>`).join('');
+    if(state.sub!=='Todos') items=items.filter(p=>p.sub===state.sub);
+  }else subs.hidden=true;
+  items.sort((a,b)=>col.compare(a.gl,b.gl)||col.compare(a.name,b.name));
+  const groups=[];
+  items.forEach(p=>{const key=(state.q?p.cat+':':'')+p.g;let g=groups[groups.length-1];if(!g||g.key!==key){g={key,label:p.gl,cat:p.cat,items:[]};groups.push(g)}g.items.push(p)});
+  if(!items.length){index.innerHTML='';list.innerHTML=`<p class="empty">No encontramos productos para “${state.q.replace(/[<>]/g,'')}”. Prueba con otra palabra.</p>`;return}
+  index.innerHTML=state.q?`<span class="hint">${items.length} resultados en todo el catálogo</span>`:groups.map((g,i)=>`<button data-g="${i}">${g.label}</button>`).join('');
+  list.innerHTML=groups.map((g,i)=>`<section class="group" id="g${i}"><h2>${g.label}${state.q?` <span>${CATS.find(c=>c.id===g.cat).label}</span>`:` <span>${g.items.length}</span>`}</h2><div class="grid">${g.items.map(card).join('')}</div></section>`).join('');
+}
+subs.addEventListener('click',e=>{const b=e.target.closest('.sub');if(!b)return;state.sub=b.dataset.s;render()});
+index.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;document.getElementById('g'+b.dataset.g).scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})});
+
+list.addEventListener('click',e=>{const c=e.target.closest('.card');if(c)openDetail(ALL[+c.dataset.i])});
+function openDetail(p){
+  let rows='';
+  if(p.mayor!=null) rows=`<div><span>Precio al mayor</span><b>${fmt(p.mayor)}</b></div><div><span>Precio al detal</span><b>${fmt(p.detal)}</b></div>`;
+  else if(p.variants) rows=p.variants.map(v=>`<div><span>${/^\d/.test(v.label)?'Ref. '+v.label:v.label}</span><b>${fmt(v.price)}</b></div>`).join('');
+  else rows=`<div><span>Precio${p.unit?' ('+p.unit+')':''}</span><b>${fmt(p.price)}</b></div>`;
+  const hint=p.variants&&p.variants.some(v=>/^\d/.test(v.label))?'<p class="hint">El número de referencia corresponde al número que aparece en la foto.</p>':'';
+  dlg.innerHTML=`<button class="close" aria-label="Cerrar">×</button><div class="dl">
+    <div class="gal"><img id="big" src="img/${p.imgs[0]}.webp" alt="${p.name.replace(/"/g,'')}">${p.imgs.length>1?`<div class="thumbs">${p.imgs.map((x,i)=>`<button data-x="${x}" aria-current="${i===0}"><img src="img/${x}.webp" alt="Foto ${i+1}"></button>`).join('')}</div>`:''}</div>
+    <div class="info">${p.sub?`<span class="tag">${p.sub}</span>`:''}<h3 id="dname">${p.name}</h3>${p.desc?`<p>${p.desc}</p>`:''}<div class="ptable">${rows}</div>${hint}</div></div>`;
+  dlg.showModal();
+}
+dlg.addEventListener('click',e=>{
+  if(e.target===dlg||e.target.closest('.close')){dlg.close();return}
+  const t=e.target.closest('.thumbs button');
+  if(t){dlg.querySelector('#big').src='img/'+t.dataset.x+'.webp';dlg.querySelectorAll('.thumbs button').forEach(b=>b.setAttribute('aria-current',b===t))}
+});
+render();
+})();
+</script>
+</body>
+</html>
