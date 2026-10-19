@@ -69,10 +69,11 @@ async function setup(env, url) {
     allowed_updates: ['message', 'callback_query'],
     drop_pending_updates: true
   });
-  await tg(env, 'setMyDescription', { description: 'Bot del catálogo de Marqueza Accesorios. Envía la foto con los datos del producto, toca la categoría y se publica en la web.' });
+  await tg(env, 'setMyDescription', { description: 'Bot del catálogo de Marqueza Accesorios. Elige la categoría, envía la foto con los datos y el producto se publica en la web del catálogo.' });
   await tg(env, 'setMyCommands', { commands: [
-    { command: 'plantilla', description: 'Ver la plantilla para publicar' },
-    { command: 'cancelar', description: 'Cancelar el producto en curso' }
+    { command: 'nuevo', description: 'Publicar un producto nuevo' },
+    { command: 'cancelar', description: 'Cancelar el producto en curso' },
+    { command: 'start', description: 'Ver la guía' }
   ] });
   const me = await tg(env, 'getMe', {});
   return json({ ok: hook.ok, webhook: hook.description, bot: me.result && me.result.username });
@@ -116,13 +117,14 @@ async function webhook(request, env, ctx) {
     const original = (m.text || '').trim();
     const t = original.toLowerCase();
     const cmd = t.startsWith('/') ? t.slice(1).split(/[@\s]/)[0] : '';
-    const CMDS = { accesorios: 'accesorios', bolsos: 'bolsos', maquillaje: 'maquillaje', rodio: 'rodio', perfumeria: 'perfumeria', perfumes: 'perfumeria' };
     if (t === 'borrar' || t === 'eliminar') {
       ctx.waitUntil(borrar(env, chatId, m));
-    } else if (cmd === 'cancelar') {
-      ctx.waitUntil((async () => { await env.DB.prepare('DELETE FROM drafts WHERE chat_id = ?').bind(chatId).run(); await responder(env, chatId, '❌ Cancelado. Cuando quieras, envía la foto del siguiente producto.'); })());
-    } else if (cmd === 'plantilla' || cmd === 'nuevo' || cmd === 'start' || CMDS[cmd]) {
-      ctx.waitUntil(enviarPlantilla(env, chatId));
+    } else if (cmd === 'cancelar' || t === BTN_CANCELAR.toLowerCase() || t === 'cancelar') {
+      ctx.waitUntil(cancelar(env, chatId));
+    } else if (cmd === 'start' || cmd === 'ayuda' || cmd === 'help') {
+      ctx.waitUntil(inicio(env, chatId, true));
+    } else if (cmd === 'nuevo' || cmd === 'plantilla' || t === BTN_NUEVO.toLowerCase() || t === 'nuevo') {
+      ctx.waitUntil(inicio(env, chatId, false));
     } else if (original) {
       ctx.waitUntil(textoBorrador(env, chatId, original, m));
     }
@@ -157,89 +159,133 @@ async function webhook(request, env, ctx) {
   return json({ ok: true });
 }
 
-// Fotos recibidas con los datos en el texto: si falta la categoría se pide con botones
-async function recibirFotos(env, chatId, caption, fileIds, msgIds) {
-  const r = parseCaption(caption || '');
-  if (!r.ok) {
-    await tg(env, 'sendMessage', { chat_id: chatId, reply_to_message_id: msgIds[0], allow_sending_without_reply: true, parse_mode: 'HTML',
-      text: '⚠️ No pude publicar:\n• ' + escHtml(r.errores.join('\n• ')) +
-        '\n\nVuelve a enviar la foto y escribe los datos en el mismo mensaje (pie de foto), así:\n\n<code>' + escHtml(plantillaDe()) + '</code>' });
-    return;
-  }
-  const prod = r.producto;
-  if (prod.cat && (prod.cat !== 'perfumeria' || prod.sub)) return publicarProducto(env, chatId, prod, fileIds, msgIds);
-  const d = { step: prod.cat ? 'tipo' : 'cat', data: prod, files: fileIds, msgs: msgIds };
-  await guardarBorrador(env, chatId, d);
-  await tg(env, 'sendMessage', { chat_id: chatId, reply_to_message_id: msgIds[0], allow_sending_without_reply: true, parse_mode: 'HTML',
-    text: textoResumen(d) + '\n\n' + (d.step === 'cat' ? '👇 Toca la categoría para publicar:' : '👇 ¿Dama, hombre o unisex?'),
-    reply_markup: { inline_keyboard: d.step === 'cat' ? TECLADO_CAT : TECLADO_TIPO } });
-}
+// ── Flujo: 1) categoría (botones)  2) tipo si es perfume (botones)  3) foto + datos en el pie de foto ──
+const BTN_NUEVO = '➕ Nuevo producto';
+const BTN_CANCELAR = '❌ Cancelar';
+const TECLADO_FIJO = { keyboard: [[{ text: BTN_NUEVO }, { text: BTN_CANCELAR }]], resize_keyboard: true, is_persistent: true };
 
 const TECLADO_CAT = [
-  [{ text: 'Accesorios', callback_data: 'cat:accesorios' }, { text: 'Bolsos', callback_data: 'cat:bolsos' }],
-  [{ text: 'Maquillaje', callback_data: 'cat:maquillaje' }, { text: 'Rodio y Covergold', callback_data: 'cat:rodio' }],
-  [{ text: 'Perfumería', callback_data: 'cat:perfumeria' }],
-  [{ text: '❌ Cancelar', callback_data: 'x' }]
+  [{ text: '🌸 Accesorios', callback_data: 'cat:accesorios' }, { text: '👜 Bolsos', callback_data: 'cat:bolsos' }],
+  [{ text: '💄 Maquillaje', callback_data: 'cat:maquillaje' }, { text: '💛 Rodio y Covergold', callback_data: 'cat:rodio' }],
+  [{ text: '✨ Perfumería', callback_data: 'cat:perfumeria' }]
 ];
 const TECLADO_TIPO = [
-  [{ text: 'Dama', callback_data: 'tipo:Dama' }, { text: 'Hombre', callback_data: 'tipo:Hombre' }, { text: 'Unisex', callback_data: 'tipo:Unisex' }],
-  [{ text: '❌ Cancelar', callback_data: 'x' }]
+  [{ text: 'Dama', callback_data: 'tipo:Dama' }, { text: 'Hombre', callback_data: 'tipo:Hombre' }, { text: 'Unisex', callback_data: 'tipo:Unisex' }]
 ];
+
+async function inicio(env, chatId, bienvenida) {
+  await env.DB.prepare('DELETE FROM drafts WHERE chat_id = ?').bind(chatId).run();
+  await guardarBorrador(env, chatId, { step: 'cat', data: {}, files: [], msgs: [] });
+  if (bienvenida) {
+    await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', reply_markup: TECLADO_FIJO, text:
+      '👋 <b>Bot del catálogo Marqueza</b>\n\nPublicar un producto toma 3 pasos:\n' +
+      '1️⃣ Elige la categoría con un botón\n2️⃣ Copia la plantilla que te envío\n3️⃣ Envía la foto (o varias) y pega la plantilla llena en el pie de foto\n\n' +
+      'El producto sale en la web en segundos.' });
+  }
+  await tg(env, 'sendMessage', { chat_id: chatId, text: '1️⃣ ¿En qué categoría va el producto?', reply_markup: { inline_keyboard: TECLADO_CAT } });
+}
+
+async function pedirFotos(env, chatId, d) {
+  const cat = d.data.cat;
+  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text:
+    `2️⃣ <b>${NOMBRE_CAT[cat]}${d.data.sub ? ' · ' + d.data.sub : ''}</b> — copia esta plantilla (toca el recuadro):` });
+  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text: `<code>${escHtml(plantillaDe(cat))}</code>` });
+  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text:
+    '3️⃣ Ahora toca el 📎, elige la foto (o varias) y <b>pega la plantilla llena en el pie de foto</b>. Envía.\n\n' +
+    (cat === 'perfumeria'
+      ? '• Llena <b>Precio mayor</b> y <b>Precio detal</b>.\n'
+      : '• Un solo precio: llena <b>Precio</b> (ej: 5.000 cada set) y deja vacíos mayor y detal.\n• Al mayor y al detal: llena esos dos y deja Precio vacío.\n') +
+    '• Título es obligatorio. Descripción es opcional.\n• No hace falta escribir el signo $.' });
+}
 
 async function leerBorrador(env, chatId) {
   const row = await env.DB.prepare('SELECT * FROM drafts WHERE chat_id = ?').bind(chatId).first();
   if (!row) return null;
-  if (Date.now() - row.updated > 6 * 3600e3) { await env.DB.prepare('DELETE FROM drafts WHERE chat_id = ?').bind(chatId).run(); return null; }
+  if (Date.now() - row.updated > 12 * 3600e3) { await env.DB.prepare('DELETE FROM drafts WHERE chat_id = ?').bind(chatId).run(); return null; }
   return { step: row.step, data: JSON.parse(row.data), files: JSON.parse(row.files), msgs: JSON.parse(row.msgs) };
 }
 async function guardarBorrador(env, chatId, d) {
   await env.DB.prepare('INSERT OR REPLACE INTO drafts (chat_id, step, data, files, msgs, updated) VALUES (?, ?, ?, ?, ?, ?)')
     .bind(chatId, d.step, JSON.stringify(d.data), JSON.stringify(d.files), JSON.stringify(d.msgs), Date.now()).run();
 }
-
 function precioTexto(p) {
   return p.mayor != null ? `Al mayor ${fmt(p.mayor)} c/u · Al detal ${fmt(p.detal)} c/u` : `${fmt(p.price)}${p.unit ? ' ' + p.unit : ''}`;
 }
 function textoResumen(d) {
   const p = d.data;
-  return `📦 <b>${escHtml(p.name)}</b>\n${p.desc ? escHtml(p.desc) + '\n' : ''}Precio: ${precioTexto(p)}\nFotos: ${d.files.length}` +
-    (p.cat ? `\nCategoría: ${NOMBRE_CAT[p.cat]}` : '');
+  return `📦 <b>${escHtml(p.name)}</b>\n${p.desc ? escHtml(p.desc) + '\n' : ''}Precio: ${precioTexto(p)}\nFotos: ${d.files.length}`;
+}
+
+// Llegaron fotos
+async function recibirFotos(env, chatId, caption, fileIds, msgIds) {
+  const d = await leerBorrador(env, chatId);
+  const r = parseCaption(caption || '');
+  if (!r.ok) {
+    const cat = d && d.data.cat;
+    await tg(env, 'sendMessage', { chat_id: chatId, reply_to_message_id: msgIds[0], allow_sending_without_reply: true, parse_mode: 'HTML',
+      text: '⚠️ No se publicó:\n• ' + escHtml(r.errores.join('\n• ')) +
+        '\n\nVuelve a enviar la foto con esta plantilla llena en el pie de foto:\n\n<code>' + escHtml(plantillaDe(cat)) + '</code>' });
+    return;
+  }
+  const prod = r.producto;
+  if (d && d.data.cat) { prod.cat = d.data.cat; if (d.data.sub) prod.sub = d.data.sub; }
+  if (prod.cat && prod.cat !== 'perfumeria') prod.sub = null;
+  if (prod.cat && (prod.cat !== 'perfumeria' || prod.sub)) {
+    await env.DB.prepare('DELETE FROM drafts WHERE chat_id = ?').bind(chatId).run();
+    return publicarProducto(env, chatId, prod, fileIds, msgIds);
+  }
+  // Enviaron foto sin elegir categoría antes: se pregunta ahora con botones
+  const nd = { step: prod.cat ? 'tipo' : 'cat', data: prod, files: fileIds, msgs: msgIds };
+  await guardarBorrador(env, chatId, nd);
+  await tg(env, 'sendMessage', { chat_id: chatId, reply_to_message_id: msgIds[0], allow_sending_without_reply: true, parse_mode: 'HTML',
+    text: textoResumen(nd) + '\n\n' + (nd.step === 'cat' ? '👇 Toca la categoría para publicar:' : '👇 ¿Dama, hombre o unisex?'),
+    reply_markup: { inline_keyboard: nd.step === 'cat' ? TECLADO_CAT : TECLADO_TIPO } });
 }
 
 async function textoBorrador(env, chatId, texto, m) {
   const d = await leerBorrador(env, chatId);
-  if (d) return responder(env, chatId, 'Toca uno de los botones del producto de arriba 👆 para publicarlo, o ❌ Cancelar.', m.message_id);
-  return ayuda(env, chatId);
+  if (d && d.step === 'fotos') {
+    return tg(env, 'sendMessage', { chat_id: chatId, reply_to_message_id: m.message_id, parse_mode: 'HTML', text:
+      '📸 Falta la foto. Toca el 📎, elige la foto y pega la plantilla llena en el <b>pie de foto</b> (en el mismo mensaje de la foto).\n\nPara cambiar de categoría toca ' + BTN_NUEVO + '.' });
+  }
+  if (d && (d.step === 'cat' || d.step === 'tipo')) return responder(env, chatId, 'Toca uno de los botones de arriba 👆', m.message_id);
+  return inicio(env, chatId, true);
+}
+
+async function cancelar(env, chatId) {
+  await env.DB.prepare('DELETE FROM drafts WHERE chat_id = ?').bind(chatId).run();
+  await tg(env, 'sendMessage', { chat_id: chatId, reply_markup: TECLADO_FIJO, text: '❌ Cancelado. No se publicó nada.\nPara publicar otro producto toca ' + BTN_NUEVO + '.' });
 }
 
 async function boton(env, cq) {
   const chatId = cq.message.chat.id;
   const msgId = cq.message.message_id;
   const [accion, valor] = cq.data.split(':');
-  if (accion === 'noop') return tg(env, 'answerCallbackQuery', { callback_query_id: cq.id });
-  const d = await leerBorrador(env, chatId);
-  if (!d) return tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Este producto ya se publicó o se canceló. Para otro, envía la foto con los datos.', show_alert: true });
   await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id });
-  const editar = (extra, teclado) => tg(env, 'editMessageText', { chat_id: chatId, message_id: msgId, parse_mode: 'HTML',
-    text: textoResumen(d) + (extra ? '\n\n' + extra : ''), reply_markup: { inline_keyboard: teclado || [] } });
+  if (accion === 'nuevo') return inicio(env, chatId, false);
+  if (accion === 'noop') return;
+  const d = await leerBorrador(env, chatId);
+  if (!d) return responder(env, chatId, 'Ese paso ya se cerró. Toca ' + BTN_NUEVO + ' para empezar.');
+  const marcar = txt => tg(env, 'editMessageReplyMarkup', { chat_id: chatId, message_id: msgId, reply_markup: { inline_keyboard: [[{ text: '✔️ ' + txt, callback_data: 'noop' }]] } });
 
-  if (accion === 'x') {
-    await env.DB.prepare('DELETE FROM drafts WHERE chat_id = ?').bind(chatId).run();
-    return editar('❌ Cancelado. No se publicó.');
-  }
   if (accion === 'cat' && d.step === 'cat') {
     d.data.cat = valor;
+    await marcar(NOMBRE_CAT[valor]);
     if (valor === 'perfumeria' && !d.data.sub) {
       d.step = 'tipo'; await guardarBorrador(env, chatId, d);
-      return editar('👇 ¿Dama, hombre o unisex?', TECLADO_TIPO);
+      return tg(env, 'sendMessage', { chat_id: chatId, text: '¿Es de dama, hombre o unisex?', reply_markup: { inline_keyboard: TECLADO_TIPO } });
     }
-    if (valor !== 'perfumeria' && d.data.sub) { d.data.desc = [d.data.desc, d.data.sub].filter(Boolean).join(' · '); d.data.sub = null; }
+    if (valor !== 'perfumeria') d.data.sub = null;
   } else if (accion === 'tipo' && d.step === 'tipo') {
-    d.data.sub = valor;
+    d.data.sub = valor; await marcar(valor);
   } else return;
-  await env.DB.prepare('DELETE FROM drafts WHERE chat_id = ?').bind(chatId).run();
-  await editar(`⏳ Publicando en ${NOMBRE_CAT[d.data.cat]}${d.data.sub ? ' · ' + d.data.sub : ''}…`);
-  await publicarProducto(env, chatId, d.data, d.files, d.msgs);
+
+  if (d.files.length) {   // ya tenía foto y datos: se publica
+    await env.DB.prepare('DELETE FROM drafts WHERE chat_id = ?').bind(chatId).run();
+    return publicarProducto(env, chatId, d.data, d.files, d.msgs);
+  }
+  d.step = 'fotos'; await guardarBorrador(env, chatId, d);
+  await pedirFotos(env, chatId, d);
 }
 
 function esImagenDocumento(m) {
@@ -256,19 +302,6 @@ function archivo(m) {
 }
 
 const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-async function enviarPlantilla(env, chatId) {
-  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text:
-    '📋 <b>Cómo publicar</b>\n1️⃣ Elige la foto (o varias)\n2️⃣ En el pie de foto pega esto y llena los datos\n3️⃣ Envía y toca la categoría\n\nToca el recuadro para copiarlo 👇' });
-  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text: `<code>${escHtml(plantillaDe())}</code>` });
-  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text:
-    '• Un solo precio: llena <b>Precio</b> (ej: 5.000 cada set) y deja vacíos mayor y detal.\n' +
-    '• Precio al mayor y al detal: llena esos dos y deja Precio vacío.\n' +
-    '• Descripción es opcional.\n• En perfumes, el bot te pregunta Dama / Hombre / Unisex con botones.' });
-}
-async function ayuda(env, chatId) {
-  await enviarPlantilla(env, chatId);
-}
-
 async function publicarProducto(env, chatId, prod, fileIds, msgIds) {
   if (prod.cat === 'perfumeria' && prod.raw) {
     const l = prod.raw.replace(/[^A-Za-zÁÉÍÓÚÑÜáéíóúñü]/g, '');
@@ -298,8 +331,9 @@ async function publicarProducto(env, chatId, prod, fileIds, msgIds) {
     .bind(id, Date.now(), prod.cat, prod.name, prod.desc, prod.price, prod.unit, prod.mayor, prod.detal, prod.sub, JSON.stringify(imgs), chatId).run();
 
   const precio = precioTexto(prod);
-  const conf = await responder(env, chatId,
-    `✅ Publicado en el catálogo\n\n${prod.name}\nCategoría: ${NOMBRE_CAT[prod.cat]}\nPrecio: ${precio}\nFotos: ${imgs.length}\n\nPara quitarlo, responde a este mensaje con: borrar`, msgIds[0]);
+  const conf = await tg(env, 'sendMessage', { chat_id: chatId, reply_to_message_id: msgIds[0], allow_sending_without_reply: true,
+    text: `✅ Publicado en el catálogo\n\n${prod.name}\nCategoría: ${NOMBRE_CAT[prod.cat]}${prod.sub ? ' · ' + prod.sub : ''}\nPrecio: ${precio}\nFotos: ${imgs.length}\n\nPara quitarlo de la web, responde a este mensaje con: borrar`,
+    reply_markup: { inline_keyboard: [[{ text: '➕ Publicar otro producto', callback_data: 'nuevo' }]] } });
   const ids = [...msgIds];
   if (conf.ok) ids.push(conf.result.message_id);
   await env.DB.batch(ids.map(mid => env.DB.prepare('INSERT OR REPLACE INTO msgmap (chat_id, msg_id, product_id) VALUES (?, ?, ?)').bind(chatId, mid, id)));

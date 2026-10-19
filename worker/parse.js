@@ -166,7 +166,11 @@ export function parseCaption(caption) {
   return errores.length ? { ok: false, errores, producto: out } : { ok: true, producto: out };
 }
 
-export function plantillaDe() {
+export function plantillaDe(cat) {
+  if (cat === 'perfumeria') return `Título: 
+Descripción: 
+Precio mayor: 
+Precio detal: `;
   return `Título: 
 Descripción: 
 Precio: 
