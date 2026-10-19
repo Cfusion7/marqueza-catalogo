@@ -7,7 +7,7 @@
 //
 // Necesita: base de datos D1 enlazada como DB y el secreto TELEGRAM_TOKEN.
 
-import { parseCaption, PLANTILLA, NOMBRE_CAT, plantillaDe } from './parse.js';
+import { parseCaption, NOMBRE_CAT, plantillaDe } from './parse.js';
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, ts INTEGER, cat TEXT, name TEXT, descr TEXT, price INTEGER, unit TEXT, mayor INTEGER, detal INTEGER, sub TEXT, imgs TEXT, chat_id INTEGER)`,
@@ -69,15 +69,10 @@ async function setup(env, url) {
     allowed_updates: ['message', 'callback_query'],
     drop_pending_updates: true
   });
-  await tg(env, 'setMyDescription', { description: 'Bot del catálogo de Marqueza Accesorios. Envía la foto del producto y te pregunto los datos para publicarlo en la web.' });
+  await tg(env, 'setMyDescription', { description: 'Bot del catálogo de Marqueza Accesorios. Envía la foto con los datos del producto, toca la categoría y se publica en la web.' });
   await tg(env, 'setMyCommands', { commands: [
-    { command: 'nuevo', description: 'Publicar un producto (paso a paso)' },
-    { command: 'cancelar', description: 'Cancelar el producto en curso' },
-    { command: 'accesorios', description: 'Plantilla rápida: Accesorios' },
-    { command: 'bolsos', description: 'Plantilla rápida: Bolsos' },
-    { command: 'maquillaje', description: 'Plantilla rápida: Maquillaje' },
-    { command: 'rodio', description: 'Plantilla rápida: Rodio' },
-    { command: 'perfumeria', description: 'Plantilla rápida: Perfumería' }
+    { command: 'plantilla', description: 'Ver la plantilla para publicar' },
+    { command: 'cancelar', description: 'Cancelar el producto en curso' }
   ] });
   const me = await tg(env, 'getMe', {});
   return json({ ok: hook.ok, webhook: hook.description, bot: me.result && me.result.username });
@@ -126,10 +121,8 @@ async function webhook(request, env, ctx) {
       ctx.waitUntil(borrar(env, chatId, m));
     } else if (cmd === 'cancelar') {
       ctx.waitUntil((async () => { await env.DB.prepare('DELETE FROM drafts WHERE chat_id = ?').bind(chatId).run(); await responder(env, chatId, '❌ Cancelado. Cuando quieras, envía la foto del siguiente producto.'); })());
-    } else if (cmd === 'nuevo' || cmd === 'start') {
-      ctx.waitUntil(responder(env, chatId, '📸 Envía la foto del producto (o varias fotos juntas en un álbum). Luego te pregunto los datos.'));
-    } else if (CMDS[cmd]) {
-      ctx.waitUntil(enviarPlantilla(env, chatId, CMDS[cmd]));
+    } else if (cmd === 'plantilla' || cmd === 'nuevo' || cmd === 'start' || CMDS[cmd]) {
+      ctx.waitUntil(enviarPlantilla(env, chatId));
     } else if (original) {
       ctx.waitUntil(textoBorrador(env, chatId, original, m));
     }
@@ -164,24 +157,34 @@ async function webhook(request, env, ctx) {
   return json({ ok: true });
 }
 
-// Fotos recibidas: con plantilla llena se publican directo; sin texto empieza el paso a paso con botones
+// Fotos recibidas con los datos en el texto: si falta la categoría se pide con botones
 async function recibirFotos(env, chatId, caption, fileIds, msgIds) {
-  if (caption && caption.trim()) {
-    const r = parseCaption(caption);
-    if (r.ok) return publicarProducto(env, chatId, r.producto, fileIds, msgIds);
-    await responder(env, chatId, '⚠️ No pude leer el texto de la foto:\n• ' + r.errores.join('\n• ') + '\n\nNo te preocupes, te pregunto los datos paso a paso 👇', msgIds[0]);
+  const r = parseCaption(caption || '');
+  if (!r.ok) {
+    await tg(env, 'sendMessage', { chat_id: chatId, reply_to_message_id: msgIds[0], allow_sending_without_reply: true, parse_mode: 'HTML',
+      text: '⚠️ No pude publicar:\n• ' + escHtml(r.errores.join('\n• ')) +
+        '\n\nVuelve a enviar la foto y escribe los datos en el mismo mensaje (pie de foto), así:\n\n<code>' + escHtml(plantillaDe()) + '</code>' });
+    return;
   }
-  const d = { step: 'cat', data: {}, files: fileIds, msgs: msgIds };
+  const prod = r.producto;
+  if (prod.cat && (prod.cat !== 'perfumeria' || prod.sub)) return publicarProducto(env, chatId, prod, fileIds, msgIds);
+  const d = { step: prod.cat ? 'tipo' : 'cat', data: prod, files: fileIds, msgs: msgIds };
   await guardarBorrador(env, chatId, d);
-  await tg(env, 'sendMessage', { chat_id: chatId, reply_to_message_id: msgIds[0], allow_sending_without_reply: true,
-    text: `📸 Recibí ${fileIds.length > 1 ? fileIds.length + ' fotos' : 'la foto'}.\n\n1️⃣ ¿En qué categoría va?`,
-    reply_markup: { inline_keyboard: [
-      [{ text: 'Accesorios', callback_data: 'cat:accesorios' }, { text: 'Bolsos', callback_data: 'cat:bolsos' }],
-      [{ text: 'Maquillaje', callback_data: 'cat:maquillaje' }, { text: 'Rodio y Covergold', callback_data: 'cat:rodio' }],
-      [{ text: 'Perfumería', callback_data: 'cat:perfumeria' }],
-      [{ text: '❌ Cancelar', callback_data: 'x' }]
-    ] } });
+  await tg(env, 'sendMessage', { chat_id: chatId, reply_to_message_id: msgIds[0], allow_sending_without_reply: true, parse_mode: 'HTML',
+    text: textoResumen(d) + '\n\n' + (d.step === 'cat' ? '👇 Toca la categoría para publicar:' : '👇 ¿Dama, hombre o unisex?'),
+    reply_markup: { inline_keyboard: d.step === 'cat' ? TECLADO_CAT : TECLADO_TIPO } });
 }
+
+const TECLADO_CAT = [
+  [{ text: 'Accesorios', callback_data: 'cat:accesorios' }, { text: 'Bolsos', callback_data: 'cat:bolsos' }],
+  [{ text: 'Maquillaje', callback_data: 'cat:maquillaje' }, { text: 'Rodio y Covergold', callback_data: 'cat:rodio' }],
+  [{ text: 'Perfumería', callback_data: 'cat:perfumeria' }],
+  [{ text: '❌ Cancelar', callback_data: 'x' }]
+];
+const TECLADO_TIPO = [
+  [{ text: 'Dama', callback_data: 'tipo:Dama' }, { text: 'Hombre', callback_data: 'tipo:Hombre' }, { text: 'Unisex', callback_data: 'tipo:Unisex' }],
+  [{ text: '❌ Cancelar', callback_data: 'x' }]
+];
 
 async function leerBorrador(env, chatId) {
   const row = await env.DB.prepare('SELECT * FROM drafts WHERE chat_id = ?').bind(chatId).first();
@@ -194,113 +197,49 @@ async function guardarBorrador(env, chatId, d) {
     .bind(chatId, d.step, JSON.stringify(d.data), JSON.stringify(d.files), JSON.stringify(d.msgs), Date.now()).run();
 }
 
-const BTN_CANCELAR = [{ text: '❌ Cancelar', callback_data: 'x' }];
-async function preguntar(env, chatId, d) {
-  const n = d.data.cat === 'perfumeria' ? { titulo: 3, desc: 4, mayor: 5, detal: 6 } : { titulo: 2, desc: 3, ptipo: 4, precio: 5, mayor: 5, detal: 6 };
-  const num = k => ['', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣'][n[k]] || '▪️';
-  const q = {
-    tipo: { text: '2️⃣ ¿Es de dama, hombre o unisex?', kb: [[{ text: 'Dama', callback_data: 'tipo:Dama' }, { text: 'Hombre', callback_data: 'tipo:Hombre' }, { text: 'Unisex', callback_data: 'tipo:Unisex' }], BTN_CANCELAR] },
-    titulo: { text: `${num('titulo')} Escribe el título del producto.\nEj: Set de collar, anillo y 2 pinzas`, kb: [BTN_CANCELAR] },
-    desc: { text: `${num('desc')} Escribe la descripción (medidas, colores, ml…).\nSi no tiene, toca Omitir.`, kb: [[{ text: 'Omitir ⏭️', callback_data: 'desc:-' }], BTN_CANCELAR] },
-    ptipo: { text: `${num('ptipo')} ¿Cómo es el precio?`, kb: [[{ text: 'Un solo precio', callback_data: 'ptipo:unico' }], [{ text: 'Al mayor y al detal', callback_data: 'ptipo:md' }], BTN_CANCELAR] },
-    precio: { text: `${num('precio')} Escribe el precio y, si quieres, cómo se vende.\nEj: 5.000 cada set · 12.000 c/u · 800 la bolsa`, kb: [BTN_CANCELAR] },
-    mayor: { text: `${num('mayor')} Escribe el precio AL MAYOR (cada uno).\nEj: 40.000`, kb: [BTN_CANCELAR] },
-    detal: { text: `${num('detal')} Escribe el precio AL DETAL (cada uno).\nEj: 55.000`, kb: [BTN_CANCELAR] }
-  }[d.step];
-  await tg(env, 'sendMessage', { chat_id: chatId, text: q.text, reply_markup: { inline_keyboard: q.kb } });
-}
-
-function productoDe(d) {
-  const x = d.data;
-  return { cat: x.cat, name: x.name, desc: x.desc || '', sub: x.cat === 'perfumeria' ? (x.sub || null) : null,
-    price: x.price ?? null, unit: x.unit || '', mayor: x.mayor ?? null, detal: x.detal ?? null };
-}
 function precioTexto(p) {
   return p.mayor != null ? `Al mayor ${fmt(p.mayor)} c/u · Al detal ${fmt(p.detal)} c/u` : `${fmt(p.price)}${p.unit ? ' ' + p.unit : ''}`;
 }
-async function resumen(env, chatId, d) {
-  const p = productoDe(d);
-  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML',
-    text: `👀 <b>Revisa antes de publicar</b>\n\n<b>${escHtml(p.name)}</b>\n${p.desc ? escHtml(p.desc) + '\n' : ''}Categoría: ${NOMBRE_CAT[p.cat]}${p.sub ? ' · ' + p.sub : ''}\nPrecio: ${precioTexto(p)}\nFotos: ${d.files.length}`,
-    reply_markup: { inline_keyboard: [[{ text: '✅ Publicar', callback_data: 'pub' }], [{ text: '✏️ Empezar de nuevo', callback_data: 'redo' }, { text: '❌ Cancelar', callback_data: 'x' }]] } });
-}
-
-function leerPrecio(txt) {
-  const m = txt.match(/\$?\s*(\d[\d.,]*)\s*(mil\b)?/i);
-  if (!m) return null;
-  const n = parseInt(m[1].replace(/[.,\s]/g, ''), 10);
-  if (!Number.isFinite(n) || n <= 0) return null;
-  const valor = m[2] && n < 1000 ? n * 1000 : n;
-  const resto = txt.slice(txt.indexOf(m[0]) + m[0].length).replace(/^[\s.:,-]+|[\s.]+$/g, '').replace(/^mil\b\s*/i, '');
-  return { n: valor, unit: resto.toLowerCase() };
+function textoResumen(d) {
+  const p = d.data;
+  return `📦 <b>${escHtml(p.name)}</b>\n${p.desc ? escHtml(p.desc) + '\n' : ''}Precio: ${precioTexto(p)}\nFotos: ${d.files.length}` +
+    (p.cat ? `\nCategoría: ${NOMBRE_CAT[p.cat]}` : '');
 }
 
 async function textoBorrador(env, chatId, texto, m) {
   const d = await leerBorrador(env, chatId);
-  if (!d || ['cat', 'tipo', 'ptipo'].includes(d.step) || d.step === 'confirm') {
-    if (d && d.step !== 'confirm') { await responder(env, chatId, 'Toca uno de los botones de arriba 👆 (o /cancelar).', m.message_id); return; }
-    if (d && d.step === 'confirm') { await responder(env, chatId, 'Toca ✅ Publicar o ❌ Cancelar en el resumen de arriba 👆', m.message_id); return; }
-    return ayuda(env, chatId);
-  }
-  const limpio = texto.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '').replace(/\s+/g, ' ').trim();
-  const oracion = s => { const l = s.replace(/[^A-Za-zÁÉÍÓÚÑÜáéíóúñü]/g, ''); return l.length > 3 && l === l.toUpperCase() ? s.charAt(0) + s.slice(1).toLowerCase() : s; };
-  if (d.step === 'titulo') {
-    if (limpio.length < 2) return responder(env, chatId, 'Escribe un título un poco más largo.', m.message_id);
-    const mayus = (() => { const l = limpio.replace(/[^A-Za-zÁÉÍÓÚÑÜáéíóúñü]/g, ''); return l.length > 3 && l === l.toUpperCase(); })();
-    const titulo = d.data.cat === 'perfumeria' && mayus ? limpio.toLowerCase().replace(/(^|[\s'’(-])(\p{L})/gu, (x, a, b) => a + b.toUpperCase()) : oracion(limpio);
-    d.data.name = titulo.slice(0, 140); d.step = 'desc';
-  } else if (d.step === 'desc') {
-    d.data.desc = oracion(limpio).slice(0, 600);
-    d.step = d.data.cat === 'perfumeria' ? 'mayor' : 'ptipo';
-  } else if (d.step === 'precio' || d.step === 'mayor' || d.step === 'detal') {
-    const p = leerPrecio(limpio);
-    if (!p) return responder(env, chatId, 'No entendí el precio. Escríbelo con números, por ejemplo: 5.000', m.message_id);
-    if (d.step === 'precio') { d.data.price = p.n; d.data.unit = p.unit; d.step = 'confirm'; }
-    else if (d.step === 'mayor') { d.data.mayor = p.n; d.step = 'detal'; }
-    else { d.data.detal = p.n; d.step = 'confirm'; }
-  }
-  await guardarBorrador(env, chatId, d);
-  if (d.step === 'confirm') await resumen(env, chatId, d); else await preguntar(env, chatId, d);
+  if (d) return responder(env, chatId, 'Toca uno de los botones del producto de arriba 👆 para publicarlo, o ❌ Cancelar.', m.message_id);
+  return ayuda(env, chatId);
 }
 
 async function boton(env, cq) {
   const chatId = cq.message.chat.id;
+  const msgId = cq.message.message_id;
   const [accion, valor] = cq.data.split(':');
-  const d = await leerBorrador(env, chatId);
-  const marcar = async elegido => {
-    await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id });
-    await tg(env, 'editMessageReplyMarkup', { chat_id: chatId, message_id: cq.message.message_id, reply_markup: { inline_keyboard: [[{ text: '✔️ ' + elegido, callback_data: 'noop' }]] } });
-  };
   if (accion === 'noop') return tg(env, 'answerCallbackQuery', { callback_query_id: cq.id });
-  if (!d) { await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Este producto ya se cerró. Envía la foto de nuevo.', show_alert: true }); return; }
+  const d = await leerBorrador(env, chatId);
+  if (!d) return tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Este producto ya se publicó o se canceló. Para otro, envía la foto con los datos.', show_alert: true });
+  await tg(env, 'answerCallbackQuery', { callback_query_id: cq.id });
+  const editar = (extra, teclado) => tg(env, 'editMessageText', { chat_id: chatId, message_id: msgId, parse_mode: 'HTML',
+    text: textoResumen(d) + (extra ? '\n\n' + extra : ''), reply_markup: { inline_keyboard: teclado || [] } });
+
   if (accion === 'x') {
     await env.DB.prepare('DELETE FROM drafts WHERE chat_id = ?').bind(chatId).run();
-    await marcar('Cancelado');
-    return responder(env, chatId, '❌ Cancelado. Cuando quieras, envía la foto del siguiente producto.');
+    return editar('❌ Cancelado. No se publicó.');
   }
   if (accion === 'cat' && d.step === 'cat') {
-    d.data.cat = valor; await marcar(NOMBRE_CAT[valor]);
-    d.step = valor === 'perfumeria' ? 'tipo' : 'titulo';
+    d.data.cat = valor;
+    if (valor === 'perfumeria' && !d.data.sub) {
+      d.step = 'tipo'; await guardarBorrador(env, chatId, d);
+      return editar('👇 ¿Dama, hombre o unisex?', TECLADO_TIPO);
+    }
+    if (valor !== 'perfumeria' && d.data.sub) { d.data.desc = [d.data.desc, d.data.sub].filter(Boolean).join(' · '); d.data.sub = null; }
   } else if (accion === 'tipo' && d.step === 'tipo') {
-    d.data.sub = valor; await marcar(valor); d.step = 'titulo';
-  } else if (accion === 'desc' && d.step === 'desc') {
-    d.data.desc = ''; await marcar('Sin descripción');
-    d.step = d.data.cat === 'perfumeria' ? 'mayor' : 'ptipo';
-  } else if (accion === 'ptipo' && d.step === 'ptipo') {
-    await marcar(valor === 'md' ? 'Al mayor y al detal' : 'Un solo precio');
-    d.step = valor === 'md' ? 'mayor' : 'precio';
-  } else if (accion === 'redo' && d.step === 'confirm') {
-    await marcar('Empezar de nuevo');
-    return recibirFotos(env, chatId, null, d.files, d.msgs);
-  } else if (accion === 'pub' && d.step === 'confirm') {
-    await marcar('Publicando…');
-    await env.DB.prepare('DELETE FROM drafts WHERE chat_id = ?').bind(chatId).run();
-    return publicarProducto(env, chatId, productoDe(d), d.files, d.msgs);
-  } else {
-    return tg(env, 'answerCallbackQuery', { callback_query_id: cq.id, text: 'Ese paso ya pasó. Sigue con la última pregunta 👇' });
-  }
-  await guardarBorrador(env, chatId, d);
-  await preguntar(env, chatId, d);
+    d.data.sub = valor;
+  } else return;
+  await env.DB.prepare('DELETE FROM drafts WHERE chat_id = ?').bind(chatId).run();
+  await editar(`⏳ Publicando en ${NOMBRE_CAT[d.data.cat]}${d.data.sub ? ' · ' + d.data.sub : ''}…`);
+  await publicarProducto(env, chatId, d.data, d.files, d.msgs);
 }
 
 function esImagenDocumento(m) {
@@ -317,22 +256,24 @@ function archivo(m) {
 }
 
 const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-async function enviarPlantilla(env, chatId, cat) {
-  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML',
-    text: `📋 Plantilla de <b>${NOMBRE_CAT[cat]}</b> — toca el recuadro para copiarla:` });
-  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text: `<code>${escHtml(plantillaDe(cat))}</code>` });
+async function enviarPlantilla(env, chatId) {
   await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text:
-    '1️⃣ Elige la foto (o varias) del producto\n2️⃣ Pega la plantilla en el pie de foto y llena los datos\n3️⃣ Envía\n\n' +
-    (cat === 'perfumeria' ? '• Llena Precio mayor y Precio detal.\n• En Tipo deja solo una opción: Dama, Hombre o Unisex.\n'
-      : '• Si tiene un solo precio, llena solo <b>Precio</b> (ej: 5.000 cada set).\n• Si tiene precio al mayor y al detal, llena esos dos y deja Precio vacío.\n') +
-    '• Lo que no apliques déjalo vacío.' });
+    '📋 <b>Cómo publicar</b>\n1️⃣ Elige la foto (o varias)\n2️⃣ En el pie de foto pega esto y llena los datos\n3️⃣ Envía y toca la categoría\n\nToca el recuadro para copiarlo 👇' });
+  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text: `<code>${escHtml(plantillaDe())}</code>` });
+  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text:
+    '• Un solo precio: llena <b>Precio</b> (ej: 5.000 cada set) y deja vacíos mayor y detal.\n' +
+    '• Precio al mayor y al detal: llena esos dos y deja Precio vacío.\n' +
+    '• Descripción es opcional.\n• En perfumes, el bot te pregunta Dama / Hombre / Unisex con botones.' });
 }
 async function ayuda(env, chatId) {
-  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text:
-    '👋 Hola. Para publicar en el catálogo:\n\n📸 Envía la foto del producto (o varias en un álbum) y te pregunto los datos con botones.\n\nSi prefieres llenar todo de una vez, usa la plantilla rápida: /accesorios /bolsos /maquillaje /rodio /perfumeria\n\nPara quitar un producto de la web: responde a su mensaje ✅ Publicado con la palabra <b>borrar</b>.' });
+  await enviarPlantilla(env, chatId);
 }
 
 async function publicarProducto(env, chatId, prod, fileIds, msgIds) {
+  if (prod.cat === 'perfumeria' && prod.raw) {
+    const l = prod.raw.replace(/[^A-Za-zÁÉÍÓÚÑÜáéíóúñü]/g, '');
+    if (l.length > 3 && l === l.toUpperCase()) prod.name = prod.raw.toLowerCase().replace(/(^|[\s'’(-])(\p{L})/gu, (x, a, b) => a + b.toUpperCase());
+  }
   const imgs = [];
   for (const fid of fileIds.slice(0, 8)) {
     const info = await tg(env, 'getFile', { file_id: fid });

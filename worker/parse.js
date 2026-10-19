@@ -71,9 +71,9 @@ function parseCampos(lineas) {
 
   const c = sinTildes(val('categoria').replace(/^#/, ''));
   out.cat = CATEGORIAS[c] || CATEGORIAS[c.split(/\s+/)[0]] || (c.startsWith('rodio') ? 'rodio' : null);
-  if (!out.cat) errores.push('Escribe la categoría: Accesorios, Bolsos, Maquillaje, Rodio o Perfumería');
 
-  out.name = oracion(val('titulo'));
+  out.raw = val('titulo');
+  out.name = oracion(out.raw);
   if (!out.name) errores.push('Falta el Título.');
   out.desc = oracion(val('descripcion'));
 
@@ -98,7 +98,7 @@ function parseCampos(lineas) {
     errores.push('Falta el precio. Llena "Precio:" o "Precio mayor:" y "Precio detal:".');
   }
   if (out.mayor != null) out.unit = '';
-  if (out.cat !== 'perfumeria' && out.sub) { out.desc = [out.desc, out.sub].filter(Boolean).join(' · '); out.sub = null; }
+  if (out.cat && out.cat !== 'perfumeria' && out.sub) { out.desc = [out.desc, out.sub].filter(Boolean).join(' · '); out.sub = null; }
   return errores.length ? { ok: false, errores, producto: out } : { ok: true, producto: out };
 }
 
@@ -106,7 +106,7 @@ export function parseCaption(caption) {
   const errores = [];
   const out = { cat: null, name: '', desc: '', unit: '', price: null, mayor: null, detal: null, sub: null };
   if (!caption || !caption.trim()) {
-    return { ok: false, errores: ['El mensaje no tiene texto. Escribe el texto con la plantilla en la misma publicación de la foto.'] };
+    return { ok: false, errores: ['La foto llegó sin datos. Escribe título y precio en el pie de foto.'] };
   }
   let lineas = caption.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   if (lineas.some(l => RE_CAMPO.test(sinTildes(l)))) return parseCampos(lineas);
@@ -120,7 +120,6 @@ export function parseCaption(caption) {
     if (CATEGORIAS[primera]) { out.cat = CATEGORIAS[primera]; lineas = lineas.slice(1); }
   }
   lineas = lineas.map(l => l.replace(/#[\p{L}]+/gu, '').trim()).filter(l => limpiar(l));
-  if (!out.cat) errores.push('Falta la categoría en la primera línea: #accesorios, #bolsos, #maquillaje, #rodio o #perfumeria');
 
   // 2) Precios
   const resto = [];
@@ -154,37 +153,24 @@ export function parseCaption(caption) {
   const todo = sinTildes(caption);
   if (/\b(dama|mujer)\b/.test(todo)) out.sub = 'Dama';
   else if (/\b(hombre|caballero)\b/.test(todo)) out.sub = 'Hombre';
-  if (out.cat !== 'perfumeria') out.sub = null;
+  if (out.cat && out.cat !== 'perfumeria') out.sub = null;
 
   // 4) Título y descripción
   const textos = resto.map(limpiar).filter(Boolean);
   if (!textos.length) errores.push('Falta el título del producto (la línea después de la categoría).');
-  out.name = oracion(textos[0] || '');
+  out.raw = textos[0] || '';
+  out.name = oracion(out.raw);
   out.desc = textos.slice(1).map(oracion).join(' ');
   if (out.name.length > 140) errores.push('El título es muy largo. Deja el título en una línea y la descripción en las siguientes.');
 
   return errores.length ? { ok: false, errores, producto: out } : { ok: true, producto: out };
 }
 
-export function plantillaDe(cat) {
-  const nombre = { accesorios: 'Accesorios', bolsos: 'Bolsos', maquillaje: 'Maquillaje', rodio: 'Rodio y Covergold', perfumeria: 'Perfumería' }[cat];
-  if (cat === 'perfumeria') return `Categoría: Perfumería
-Título: 
-Descripción: 
-Tipo: Dama / Hombre / Unisex
-Precio mayor: 
-Precio detal: `;
-  if (cat) return `Categoría: ${nombre}
-Título: 
-Descripción: 
-Precio: 
-Precio mayor: 
-Precio detal: `;
-  return `Categoría: 
-Título: 
+export function plantillaDe() {
+  return `Título: 
 Descripción: 
 Precio: 
 Precio mayor: 
 Precio detal: `;
 }
-export const PLANTILLA = plantillaDe(null);
+export const PLANTILLA = plantillaDe();
