@@ -7,7 +7,7 @@
 //
 // Necesita: base de datos D1 enlazada como DB y el secreto TELEGRAM_TOKEN.
 
-import { parseCaption, PLANTILLA, NOMBRE_CAT } from './parse.js';
+import { parseCaption, PLANTILLA, NOMBRE_CAT, plantillaDe } from './parse.js';
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, ts INTEGER, cat TEXT, name TEXT, descr TEXT, price INTEGER, unit TEXT, mayor INTEGER, detal INTEGER, sub TEXT, imgs TEXT, chat_id INTEGER)`,
@@ -69,7 +69,13 @@ async function setup(env, url) {
     drop_pending_updates: true
   });
   await tg(env, 'setMyDescription', { description: 'Bot del catálogo de Marqueza Accesorios. Envía la foto (o varias) con el texto de la plantilla y el producto se publica en la web.' });
-  await tg(env, 'setMyCommands', { commands: [{ command: 'plantilla', description: 'Ver la plantilla para publicar' }] });
+  await tg(env, 'setMyCommands', { commands: [
+    { command: 'accesorios', description: 'Plantilla para Accesorios' },
+    { command: 'bolsos', description: 'Plantilla para Bolsos' },
+    { command: 'maquillaje', description: 'Plantilla para Maquillaje' },
+    { command: 'rodio', description: 'Plantilla para Rodio y Covergold' },
+    { command: 'perfumeria', description: 'Plantilla para Perfumería' }
+  ] });
   const me = await tg(env, 'getMe', {});
   return json({ ok: hook.ok, webhook: hook.description, bot: me.result && me.result.username });
 }
@@ -109,12 +115,14 @@ async function webhook(request, env, ctx) {
   // Texto sin foto
   if (!m.photo && !esImagenDocumento(m)) {
     const t = (m.text || '').trim().toLowerCase();
+    const cmd = t.startsWith('/') ? t.slice(1).split(/[@\s]/)[0] : '';
+    const CMDS = { accesorios: 'accesorios', bolsos: 'bolsos', maquillaje: 'maquillaje', rodio: 'rodio', perfumeria: 'perfumeria', perfumes: 'perfumeria' };
     if (t === 'borrar' || t === 'eliminar') {
       ctx.waitUntil(borrar(env, chatId, m));
+    } else if (CMDS[cmd]) {
+      ctx.waitUntil(enviarPlantilla(env, chatId, CMDS[cmd]));
     } else if (t) {
-      ctx.waitUntil(responder(env, chatId,
-        'Hola 👋 Para publicar un producto envía la FOTO (o varias en un álbum) y en el mismo mensaje escribe el texto así:\n\n' +
-        PLANTILLA + '\n\nPara quitar un producto de la web, responde a su publicación con la palabra: borrar', m.message_id));
+      ctx.waitUntil(ayuda(env, chatId));
     }
     return json({ ok: true });
   }
@@ -161,10 +169,27 @@ function archivo(m) {
   return m.document.file_id;
 }
 
+const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+async function enviarPlantilla(env, chatId, cat) {
+  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML',
+    text: `📋 Plantilla de <b>${NOMBRE_CAT[cat]}</b> — toca el recuadro para copiarla:` });
+  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text: `<code>${escHtml(plantillaDe(cat))}</code>` });
+  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text:
+    '1️⃣ Elige la foto (o varias) del producto\n2️⃣ Pega la plantilla en el pie de foto y llena los datos\n3️⃣ Envía\n\n' +
+    (cat === 'perfumeria' ? '• Llena Precio mayor y Precio detal.\n• En Tipo deja solo una opción: Dama, Hombre o Unisex.\n'
+      : '• Si tiene un solo precio, llena solo <b>Precio</b> (ej: 5.000 cada set).\n• Si tiene precio al mayor y al detal, llena esos dos y deja Precio vacío.\n') +
+    '• Lo que no apliques déjalo vacío.' });
+}
+async function ayuda(env, chatId) {
+  await tg(env, 'sendMessage', { chat_id: chatId, parse_mode: 'HTML', text:
+    '👋 Hola. Para publicar en el catálogo, toca la categoría y te envío la plantilla para copiar:\n\n' +
+    '/accesorios\n/bolsos\n/maquillaje\n/rodio\n/perfumeria\n\nPara quitar un producto de la web: responde a su mensaje ✅ Publicado con la palabra <b>borrar</b>.' });
+}
+
 async function publicar(env, chatId, caption, fileIds, msgIds) {
   const r = parseCaption(caption || '');
   if (!r.ok) {
-    await responder(env, chatId, '⚠️ No pude publicar este producto:\n• ' + r.errores.join('\n• ') + '\n\nCorrige y vuelve a enviar la foto con el texto. Ejemplo:\n\n' + PLANTILLA, msgIds[0]);
+    await responder(env, chatId, '⚠️ No pude publicar este producto:\n• ' + r.errores.join('\n• ') + '\n\nCorrige y vuelve a enviar la foto con el texto. Si necesitas la plantilla, toca /accesorios, /bolsos, /maquillaje, /rodio o /perfumeria', msgIds[0]);
     return;
   }
   const prod = r.producto;
