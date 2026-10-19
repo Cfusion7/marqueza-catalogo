@@ -11,7 +11,7 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "marqueza-catalogo"
-database_id = "PENDIENTE"
+database_id = "048894cc-6736-49e1-ae49-63690d6190da"
 
 [observability]
 enabled = true
