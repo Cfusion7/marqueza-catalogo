@@ -1,0 +1,17 @@
+name = "marqueza-catalogo"
+main = "worker/index.js"
+compatibility_date = "2026-10-01"
+
+# La página: todos los archivos del repositorio (menos los de .assetsignore)
+[assets]
+directory = "."
+binding = "ASSETS"
+
+# Base de datos donde el bot guarda los productos y fotos que llegan por Telegram
+[[d1_databases]]
+binding = "DB"
+database_name = "marqueza-catalogo"
+database_id = "PENDIENTE"
+
+[observability]
+enabled = true

@@ -96,6 +96,7 @@ main{padding-bottom:48px}
 .card:hover{border-color:color-mix(in srgb,var(--gold) 55%,var(--line))}
 .ph{position:relative;aspect-ratio:4/5;background:var(--photo);max-width:100%;border-bottom:1px solid var(--line)}
 .ph img{width:100%;height:100%;object-fit:contain;display:block}
+.ph .nuevo{position:absolute;left:8px;top:8px;background:var(--gold);color:#fff;font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px}
 .ph .n{position:absolute;right:8px;bottom:8px;background:color-mix(in srgb,var(--ink) 78%,transparent);color:var(--bg);font-size:.7rem;padding:2px 7px;border-radius:999px}
 .body{display:flex;flex-direction:column;gap:6px;padding:10px 12px 12px;flex:1;min-width:0}
 .name{font-weight:500;font-size:.9rem;line-height:1.3}
@@ -226,7 +227,11 @@ function groupOf(p){
   return {key:k,label:w};
 }
 const LABELS={caiman:'Caimanes',banana:'Bananas',espejo:'Espejos',pinza:'Pinzas',anillo:'Anillos',arete:'Aretes',topo:'Topos',llavero:'Llaveros',monedero:'Monederos',balaca:'Balacas',diadema:'Diademas',mono:'Moños',cola:'Colas',colita:'Colitas',scrunchie:'Scrunchies',cepillo:'Cepillos',liga:'Ligas',billetera:'Billeteras',carriel:'Carrieles',bolso:'Bolsos',canguro:'Canguros',morral:'Morrales',cosmetiquera:'Cosmetiqueras',estuche:'Estuches',pulsera:'Pulseras',cadena:'Cadenas',candonga:'Candongas',set:'Sets',trio:'Tríos',tobillera:'Tobilleras',aro:'Aros',rosario:'Rosarios',collar:'Collares',base:'Bases',rubor:'Rubores',brocha:'Brochas',tinta:'Tintas',balsamo:'Bálsamos labiales',polvo:'Polvos',corrector:'Correctores',fijador:'Fijadores',serum:'Sérums',crema:'Cremas',mascarilla:'Mascarillas',lip:'Lip gloss',termo:'Termos',tapa:'Tapa ojos',pony:'Pony cuffs',mini:'Mini',parche:'Parches',splash:'Splash',mantequilla:'Mantequillas',pestanina:'Pestañinas',delineador:'Delineadores',iluminador:'Iluminadores',sombra:'Sombras',paleta:'Paletas',kit:'Kits',primer:'Primers',limpiador:'Limpiadores',contorno:'Contorno de ojos',beauty:'Beauty blenders',brillo:'Brillos labiales',cubierta:'Cubiertas',moño:'Moños'};
-ALL.forEach(p=>{const g=groupOf(p);p.g=g.key;p.gl=p.cat==='perfumeria'?g.label:(LABELS[g.key]||g.label);p.s=strip(p.name+' '+(p.desc||'')+' '+p.gl)});
+function prep(p){const g=groupOf(p);p.g=g.key;p.gl=p.cat==='perfumeria'?g.label:(LABELS[g.key]||g.label);p.s=strip(p.name+' '+(p.desc||'')+' '+p.gl)}
+ALL.forEach(prep);
+const src=i=>/^(\/|https?:)/.test(i)?i:`img/${i}.webp`;
+const esNuevo=p=>p.nuevo&&p.ts&&(Date.now()-p.ts)<15*864e5;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 let state={cat:'accesorios',q:'',sub:'Todos',type:null};
 try{const h=location.hash.slice(1);if(CATS.some(c=>c.id===h))state.cat=h;}catch(e){}
@@ -249,7 +254,7 @@ function priceBlock(p){
 function card(p){
   const i=ALL.indexOf(p);
   return `<button class="card" data-i="${i}" aria-label="Ver ${p.name.replace(/"/g,'')}">
-    <div class="ph"><img loading="lazy" decoding="async" src="img/${p.imgs[0]}.webp" alt="">${p.imgs.length>1?`<span class="n">${p.imgs.length} fotos</span>`:''}</div>
+    <div class="ph"><img loading="lazy" decoding="async" src="${src(p.imgs[0])}" alt="">${p.imgs.length>1?`<span class="n">${p.imgs.length} fotos</span>`:''}${esNuevo(p)?'<span class="nuevo">Nuevo</span>':''}</div>
     <div class="body">${p.sub?`<span class="tag">${p.sub}</span>`:''}<div class="name">${p.name}</div>${p.desc?`<div class="desc">${p.desc}</div>`:''}<div class="prices">${priceBlock(p)}</div></div>
   </button>`;
 }
@@ -303,16 +308,18 @@ function openDetail(p){
   else rows=`<div><span>Precio${p.unit?' ('+p.unit+')':''}</span><b>${fmt(p.price)}</b></div>`;
   const hint=p.variants&&p.variants.some(v=>/^\d/.test(v.label))?'<p class="hint">El número de referencia corresponde al número que aparece en la foto.</p>':'';
   dlg.innerHTML=`<button class="close" aria-label="Cerrar">×</button><div class="dl">
-    <div class="gal"><img id="big" src="img/${p.imgs[0]}.webp" alt="${p.name.replace(/"/g,'')}">${p.imgs.length>1?`<div class="thumbs">${p.imgs.map((x,i)=>`<button data-x="${x}" aria-current="${i===0}"><img src="img/${x}.webp" alt="Foto ${i+1}"></button>`).join('')}</div>`:''}</div>
+    <div class="gal"><img id="big" src="${src(p.imgs[0])}" alt="${p.name.replace(/"/g,'')}">${p.imgs.length>1?`<div class="thumbs">${p.imgs.map((x,i)=>`<button data-x="${x}" aria-current="${i===0}"><img src="${src(x)}" alt="Foto ${i+1}"></button>`).join('')}</div>`:''}</div>
     <div class="info">${p.sub?`<span class="tag">${p.sub}</span>`:''}<h3 id="dname">${p.name}</h3>${p.desc?`<p>${p.desc}</p>`:''}<div class="ptable">${rows}</div>${hint}</div></div>`;
   dlg.showModal();
 }
 dlg.addEventListener('click',e=>{
   if(e.target===dlg||e.target.closest('.close')){dlg.close();return}
   const t=e.target.closest('.thumbs button');
-  if(t){dlg.querySelector('#big').src='img/'+t.dataset.x+'.webp';dlg.querySelectorAll('.thumbs button').forEach(b=>b.setAttribute('aria-current',b===t))}
+  if(t){dlg.querySelector('#big').src=src(t.dataset.x);dlg.querySelectorAll('.thumbs button').forEach(b=>b.setAttribute('aria-current',b===t))}
 });
 render();
+// Productos nuevos publicados desde el bot de Telegram
+if(/^https?:$/.test(location.protocol)){fetch('/api/productos',{cache:'no-store'}).then(r=>r.ok?r.json():[]).then(list=>{if(!Array.isArray(list)||!list.length)return;list.forEach(p=>{p.name=esc(p.name);p.desc=esc(p.desc||'');p.unit=esc(p.unit||'');prep(p);ALL.push(p)});render()}).catch(()=>{});}
 })();
 </script>
 </body>
