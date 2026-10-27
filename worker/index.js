@@ -8,6 +8,7 @@
 // Necesita: base de datos D1 enlazada como DB y el secreto TELEGRAM_TOKEN.
 
 import { parseCaption, NOMBRE_CAT, plantillaDe } from './parse.js';
+import { rutaAdmin, SCHEMA_ADMIN } from './admin.js';
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS products (id TEXT PRIMARY KEY, ts INTEGER, cat TEXT, name TEXT, descr TEXT, price INTEGER, unit TEXT, mayor INTEGER, detal INTEGER, sub TEXT, imgs TEXT, chat_id INTEGER)`,
@@ -20,7 +21,7 @@ const SCHEMA = [
 let schemaListo = false;
 async function asegurarTablas(env) {
   if (schemaListo) return;
-  await env.DB.batch(SCHEMA.map(q => env.DB.prepare(q)));
+  await env.DB.batch([...SCHEMA, ...SCHEMA_ADMIN].map(q => env.DB.prepare(q)));
   schemaListo = true;
 }
 
@@ -52,6 +53,14 @@ export default {
       if (p.startsWith('/api/img/')) return await imagen(env, p.slice(9), request, ctx);
       if (p === '/api/telegram' && request.method === 'POST') return await webhook(request, env, ctx);
       if (p === '/api/setup') return await setup(env, url);
+      if (p.startsWith('/api/admin/')) { await asegurarTablas(env); return await rutaAdmin(request, env, url); }
+      if (p === '/admin/') return Response.redirect(url.origin + '/admin', 301);
+      if (p === '/admin') {
+        const r = await env.ASSETS.fetch(new Request(url.origin + '/', request));
+        const h = new Headers(r.headers);
+        h.set('cache-control', 'no-store'); h.set('x-robots-tag', 'noindex, nofollow');
+        return new Response(r.body, { status: r.status, headers: h });
+      }
     } catch (e) {
       console.error(e);
       return json({ ok: false, error: String(e && e.message || e) }, 500);
@@ -81,13 +90,16 @@ async function setup(env, url) {
 
 async function listar(env) {
   await asegurarTablas(env);
-  const { results } = await env.DB.prepare('SELECT id, ts, cat, name, descr, price, unit, mayor, detal, sub, imgs FROM products ORDER BY ts DESC').all();
-  const productos = results.map(r => {
+  const [prod, ocu] = await env.DB.batch([
+    env.DB.prepare('SELECT id, ts, cat, name, descr, price, unit, mayor, detal, sub, imgs FROM products WHERE id NOT IN (SELECT pid FROM hidden) ORDER BY ts DESC'),
+    env.DB.prepare("SELECT pid FROM hidden WHERE substr(pid, 1, 2) = 'o_'")
+  ]);
+  const nuevos = prod.results.map(r => {
     const o = { id: r.id, cat: r.cat, name: r.name, desc: r.descr || '', unit: r.unit || '', imgs: JSON.parse(r.imgs).map(i => '/api/img/' + i), nuevo: true, ts: r.ts };
     if (r.mayor != null) { o.mayor = r.mayor; o.detal = r.detal; if (r.sub) o.sub = r.sub; } else o.price = r.price;
     return o;
   });
-  return json(productos, 200, { 'cache-control': 'public, max-age=5' });
+  return json({ nuevos, ocultos: ocu.results.map(r => r.pid) }, 200, { 'cache-control': 'public, max-age=5' });
 }
 
 async function imagen(env, id, request, ctx) {

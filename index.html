@@ -132,6 +132,59 @@ dialog::backdrop{background:rgba(25,12,20,.55)}
 .hint{font-size:.78rem;color:var(--muted)}
 .close{position:absolute;top:10px;right:10px;width:38px;height:38px;border-radius:50%;border:0;background:color-mix(in srgb,var(--surface) 88%,transparent);font-size:1.2rem;line-height:1;z-index:2}
 
+/* Modo administrador */
+body.admin .card{cursor:pointer}
+body.admin .card .chk{position:absolute;right:8px;top:8px;width:26px;height:26px;border-radius:8px;border:2px solid #fff;background:rgba(58,36,49,.25);box-shadow:0 1px 4px rgba(0,0,0,.25);z-index:2}
+body.admin .card.sel{border-color:#c0392b;box-shadow:0 0 0 2px #c0392b}
+body.admin .card.sel .chk,.adm-pitem.sel .chk{background:#c0392b;border-color:#c0392b}
+body.admin .card.sel .chk::after,.adm-pitem.sel .chk::after{content:"✓";color:#fff;font-weight:700;display:grid;place-items:center;height:100%;font-size:15px}
+body.admin .card.sel img{opacity:.75}
+body.adm-locked main,body.adm-locked .bar{visibility:hidden}
+.gsel{margin-left:6px;font-family:var(--font-body);font-size:.75rem;font-weight:500;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 10px;order:3}
+.group h2 .gsel{order:0}
+.adm-bar{background:#3a2431;color:#fff}
+.adm-bar .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding-block:8px;font-size:.85rem}
+.adm-bar span{opacity:.75;flex:1;min-width:160px}
+.adm-btn{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:8px 14px;font-size:.88rem;font-weight:500}
+.adm-btn:disabled{opacity:.45;cursor:not-allowed}
+.adm-btn.dark{background:var(--ink);border-color:var(--ink);color:#fff;width:100%;padding:11px}
+.adm-btn.danger{background:#c0392b;border-color:#c0392b;color:#fff}
+.adm-selbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:#fff;border-top:2px solid #c0392b;box-shadow:0 -6px 20px rgba(0,0,0,.12);padding-bottom:env(safe-area-inset-bottom,0px)}
+.adm-selbar .wrap{display:flex;align-items:center;gap:8px;padding-block:10px;flex-wrap:wrap}
+.adm-selbar span{flex:1;font-weight:600;min-width:150px}
+body.admin footer{padding-bottom:80px}
+.adm-login{position:fixed;inset:0;z-index:60;background:var(--bg);display:grid;place-items:center;padding:16px max(16px,env(safe-area-inset-right,0px)) 16px max(16px,env(safe-area-inset-left,0px))}
+.adm-box{width:min(380px,100%);display:flex;flex-direction:column;gap:10px;text-align:center}
+.adm-box img{margin:0 auto;border-radius:50%}
+.adm-box h2{margin:0;font-family:var(--font-display);font-size:1.7rem}
+.adm-box p{margin:0;color:var(--muted);font-size:.9rem}
+.adm-box label{text-align:left;font-size:.85rem;font-weight:500;margin-top:6px}
+.adm-box input{border:1px solid var(--line);border-radius:10px;padding:11px 12px;font:inherit;font-size:1rem}
+.adm-err{color:#c0392b!important;min-height:1.2em}
+.adm-link{font-size:.82rem;color:var(--muted)}
+.adm-dlg{border:0;border-radius:var(--r);padding:20px;width:min(520px,calc(100vw - 32px));background:var(--surface);color:var(--ink)}
+.adm-dlg.wide{width:min(720px,calc(100vw - 32px));max-height:86dvh;padding:0}
+.adm-dlg::backdrop{background:rgba(25,12,20,.55)}
+.adm-dlg h3{margin:0 0 8px;font-family:var(--font-display);font-size:1.5rem;line-height:1.15}
+.adm-dlg p{margin:0 0 12px;color:var(--muted);font-size:.9rem}
+.adm-thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:6px;margin-bottom:16px}
+.adm-thumbs img,.adm-thumbs span{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.adm-thumbs span{display:grid;place-items:center;font-weight:600;color:var(--muted);font-size:.85rem}
+.adm-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.adm-ph{display:flex;justify-content:space-between;align-items:center;padding:16px 18px 8px}
+.adm-ph h3{margin:0}.adm-ph small{font-family:var(--font-body);font-size:.8rem;color:var(--muted)}
+.adm-x{border:0;background:none;font-size:1.5rem;line-height:1}
+.adm-ptools{display:flex;flex-wrap:wrap;gap:8px;padding:0 18px 12px;border-bottom:1px solid var(--line)}
+.adm-plist{display:flex;flex-direction:column;overflow-y:auto;max-height:60dvh}
+.adm-pitem{display:flex;align-items:center;gap:12px;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;padding:10px 18px;min-width:0}
+.adm-pitem .chk{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid var(--line)}
+.adm-pitem img,.adm-pitem i{flex:none;width:52px;height:52px;object-fit:cover;border-radius:8px;background:var(--photo);border:1px solid var(--line)}
+.adm-pitem span:last-child{display:flex;flex-direction:column;min-width:0}
+.adm-pitem b{font-weight:500;font-size:.9rem}
+.adm-pitem small{color:var(--muted);font-size:.75rem}
+.adm-empty{padding:24px 18px 30px!important;text-align:center}
+.adm-toast{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);z-index:70;background:#3a2431;color:#fff;padding:10px 16px;border-radius:12px;font-size:.88rem;max-width:calc(100vw - 32px);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+
 /* Pie */
 footer{border-top:1px solid var(--line);background:var(--surface)}
 footer .wrap{display:grid;gap:22px;padding-block:28px calc(28px + env(safe-area-inset-bottom,0px));grid-template-columns:1fr}
@@ -202,7 +255,11 @@ const CATS=[
   {id:'rodio',label:'Rodio y Covergold'},
   {id:'perfumeria',label:'Perfumería 1.1'}
 ];
-const ALL=window.PRODUCTOS||[];
+const ORIG=(window.PRODUCTOS||[]).map(p=>(p.id=p.id||'o_'+p.imgs[0],p));
+const ALL=ORIG.slice();
+const ADMIN=location.pathname.replace(/\/+$/,'')==='/admin';
+const SEL=new Set();
+let ultimosGrupos=[];
 const col=new Intl.Collator('es',{sensitivity:'base',numeric:true});
 const fmt=n=>'$'+n.toLocaleString('es-CO');
 const strip=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
@@ -253,8 +310,8 @@ function priceBlock(p){
 }
 function card(p){
   const i=ALL.indexOf(p);
-  return `<button class="card" data-i="${i}" aria-label="Ver ${p.name.replace(/"/g,'')}">
-    <div class="ph"><img loading="lazy" decoding="async" src="${src(p.imgs[0])}" alt="">${p.imgs.length>1?`<span class="n">${p.imgs.length} fotos</span>`:''}${esNuevo(p)?'<span class="nuevo">Nuevo</span>':''}</div>
+  return `<button class="card${SEL.has(p.id)?' sel':''}" data-i="${i}" aria-label="${ADMIN?'Seleccionar':'Ver'} ${p.name.replace(/"/g,'')}"${ADMIN?` aria-pressed="${SEL.has(p.id)}"`:''}>
+    <div class="ph">${ADMIN?'<span class="chk" aria-hidden="true"></span>':''}<img loading="lazy" decoding="async" src="${src(p.imgs[0])}" alt="">${p.imgs.length>1?`<span class="n">${p.imgs.length} fotos</span>`:''}${esNuevo(p)?'<span class="nuevo">Nuevo</span>':''}</div>
     <div class="body">${p.sub?`<span class="tag">${p.sub}</span>`:''}<div class="name">${p.name}</div>${p.desc?`<div class="desc">${p.desc}</div>`:''}<div class="prices">${priceBlock(p)}</div></div>
   </button>`;
 }
@@ -282,7 +339,8 @@ function render(){
     if(!act) state.type=null; else groups=[act];
     index.innerHTML=`<button class="fbtn" id="openTypes" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>Filtrar por tipo</button>`+(act?`<button class="chip" id="clearType" aria-label="Quitar filtro ${act.label}"><b>${act.label}</b><span>×</span></button>`:'');
   }
-  list.innerHTML=groups.map((g,i)=>`<section class="group" id="g${i}"><h2>${g.label}${state.q?` <span>${CATS.find(c=>c.id===g.cat).label}</span>`:` <span>${g.items.length}</span>`}</h2><div class="grid">${g.items.map(card).join('')}</div></section>`).join('');
+  ultimosGrupos=groups;
+  list.innerHTML=groups.map((g,i)=>`<section class="group" id="g${i}"><h2>${g.label}${state.q?` <span>${CATS.find(c=>c.id===g.cat).label}</span>`:` <span>${g.items.length}</span>`}${ADMIN?`<button class="gsel" data-g="${i}">${g.items.every(p=>SEL.has(p.id))?'Quitar selección':'Seleccionar todos'}</button>`:''}</h2><div class="grid">${g.items.map(card).join('')}</div></section>`).join('');
 }
 subs.addEventListener('click',e=>{const b=e.target.closest('.sub');if(!b)return;state.sub=b.dataset.s;render()});
 function openTypes(){
@@ -300,7 +358,15 @@ types.addEventListener('click',e=>{
   state.type=b.dataset.t||null;types.close();render();window.scrollTo({top:0});
 });
 
-list.addEventListener('click',e=>{const c=e.target.closest('.card');if(c)openDetail(ALL[+c.dataset.i])});
+list.addEventListener('click',e=>{
+  if(ADMIN){
+    const gb=e.target.closest('.gsel');
+    if(gb){const g=ultimosGrupos[+gb.dataset.g];const todos=g.items.every(p=>SEL.has(p.id));g.items.forEach(p=>todos?SEL.delete(p.id):SEL.add(p.id));render();window.adminSel&&window.adminSel();return}
+    const c=e.target.closest('.card');if(!c)return;
+    const p=ALL[+c.dataset.i];SEL.has(p.id)?SEL.delete(p.id):SEL.add(p.id);
+    c.classList.toggle('sel',SEL.has(p.id));c.setAttribute('aria-pressed',SEL.has(p.id));window.adminSel&&window.adminSel();return;
+  }
+  const c=e.target.closest('.card');if(c)openDetail(ALL[+c.dataset.i])});
 function openDetail(p){
   let rows='';
   if(p.mayor!=null) rows=`<div><span>Precio al mayor (c/u)</span><b>${fmt(p.mayor)}</b></div><div><span>Precio al detal (c/u)</span><b>${fmt(p.detal)}</b></div>`;
@@ -317,9 +383,94 @@ dlg.addEventListener('click',e=>{
   const t=e.target.closest('.thumbs button');
   if(t){dlg.querySelector('#big').src=src(t.dataset.x);dlg.querySelectorAll('.thumbs button').forEach(b=>b.setAttribute('aria-current',b===t))}
 });
-render();
-// Productos nuevos publicados desde el bot de Telegram
-if(/^https?:$/.test(location.protocol)){fetch('/api/productos',{cache:'no-store'}).then(r=>r.ok?r.json():[]).then(list=>{if(!Array.isArray(list)||!list.length)return;list.forEach(p=>{p.name=esc(p.name);p.desc=esc(p.desc||'');p.unit=esc(p.unit||'');prep(p);ALL.push(p)});render()}).catch(()=>{});}
+// Carga los productos publicados desde Telegram y oculta los que se borraron desde el panel
+let cargado=false;
+function cargar(){
+  return fetch('/api/productos',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{
+    if(!d)return;
+    const ocultos=new Set(d.ocultos||[]);
+    ALL.length=0;
+    ORIG.forEach(p=>{if(!ocultos.has(p.id))ALL.push(p)});
+    (d.nuevos||[]).forEach(p=>{p.name=esc(p.name);p.desc=esc(p.desc||'');p.unit=esc(p.unit||'');prep(p);ALL.push(p)});
+  });
+}
+if(/^https?:$/.test(location.protocol)){
+  const t=setTimeout(()=>{if(!cargado){cargado=true;render()}},1500);
+  cargar().catch(()=>{}).finally(()=>{clearTimeout(t);cargado=true;render()});
+}else render();
+
+/* ───────────── Modo administrador (/admin) ───────────── */
+if(ADMIN){
+  document.title='Admin · Catálogo Marqueza';
+  document.body.classList.add('admin');
+  const api=(ruta,datos)=>fetch('/api/admin/'+ruta,datos===undefined?{cache:'no-store',credentials:'same-origin'}:{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json','x-admin':'1'},body:JSON.stringify(datos)}).then(async r=>{let j={};try{j=await r.json()}catch(_){};if(!r.ok&&!j.error)j.error='Error '+r.status;j.status=r.status;return j});
+  const extra=document.createElement('div');
+  extra.innerHTML=`
+  <div id="adm-login" class="adm-login" hidden><form id="adm-form" class="adm-box" autocomplete="off">
+    <img src="logo.webp" alt="" width="64" height="64"><h2>Panel de administrador</h2>
+    <p>Escribe la contraseña para seleccionar y borrar productos del catálogo.</p>
+    <label for="adm-pw">Contraseña</label><input id="adm-pw" type="password" required autocomplete="current-password">
+    <p class="adm-err" id="adm-err" role="alert"></p><button class="adm-btn dark" type="submit">Entrar</button>
+    <a href="/" class="adm-link">Ver el catálogo público</a></form></div>
+  <div id="adm-bar" class="adm-bar" hidden><div class="wrap"><b>🔒 Modo administrador</b><span>Toca las tarjetas para seleccionarlas.</span>
+    <button id="adm-trash" class="adm-btn">🗑️ Papelera</button><button id="adm-out" class="adm-btn">Salir</button></div></div>
+  <div id="adm-sel" class="adm-selbar" hidden><div class="wrap"><span id="adm-count"></span><button id="adm-clear" class="adm-btn">Quitar selección</button><button id="adm-del" class="adm-btn danger">Borrar</button></div></div>
+  <dialog id="adm-confirm" class="adm-dlg" aria-labelledby="adm-ct"></dialog>
+  <dialog id="adm-papelera" class="adm-dlg wide" aria-labelledby="adm-pt"></dialog>
+  <div id="adm-toast" class="adm-toast" role="status" hidden></div>`;
+  document.body.appendChild(extra);
+  document.body.prepend(extra.querySelector('#adm-bar'));
+  const $a=id=>document.getElementById(id);
+  const toast=m=>{const t=$a('adm-toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,3500)};
+  const sesion=ok=>{$a('adm-login').hidden=ok;$a('adm-bar').hidden=!ok;document.body.classList.toggle('adm-locked',!ok);if(!ok){SEL.clear();window.adminSel();setTimeout(()=>$a('adm-pw').focus(),50)}};
+  window.adminSel=()=>{const n=SEL.size;$a('adm-sel').hidden=!n;$a('adm-count').textContent=n+(n===1?' producto seleccionado':' productos seleccionados');$a('adm-del').textContent='🗑️ Borrar '+n};
+  api('yo').then(r=>{sesion(!!r.ok);if(!r.ok&&r.configurado===false)$a('adm-err').textContent='Aún no se ha configurado la contraseña en Cloudflare (ADMIN_PASSWORD).'});
+  $a('adm-form').addEventListener('submit',e=>{e.preventDefault();$a('adm-err').textContent='';
+    api('login',{password:$a('adm-pw').value}).then(r=>{if(r.ok){$a('adm-pw').value='';sesion(true);toast('Bienvenido. Toca las tarjetas que quieras borrar.')}else $a('adm-err').textContent=r.error})});
+  $a('adm-out').addEventListener('click',()=>api('logout',{}).then(()=>sesion(false)));
+  $a('adm-clear').addEventListener('click',()=>{SEL.clear();render();window.adminSel()});
+  const vencida=r=>{if(r.status===401){sesion(false);$a('adm-err').textContent='La sesión venció. Vuelve a entrar.';return true}return false};
+  const miniaturas=items=>`<div class="adm-thumbs">${items.slice(0,24).map(p=>`<img src="${esc(p.img)}" alt="" loading="lazy">`).join('')}${items.length>24?`<span>+${items.length-24}</span>`:''}</div>`;
+
+  // Borrar seleccionados (con confirmación)
+  $a('adm-del').addEventListener('click',()=>{
+    const items=ALL.filter(p=>SEL.has(p.id)).map(p=>({id:p.id,name:p.name,cat:p.cat,img:src(p.imgs[0])}));
+    if(!items.length)return;
+    const d=$a('adm-confirm');const n=items.length;
+    d.innerHTML=`<h3 id="adm-ct">¿Seguro que quieres borrar ${n===1?'este producto':'estos '+n+' productos'}?</h3>
+      <p>Dejarán de verse en el catálogo de inmediato. Quedan en la <b>Papelera</b> por si necesitas restaurarlos.</p>${miniaturas(items)}
+      <div class="adm-actions"><button class="adm-btn" data-a="no">Cancelar</button><button class="adm-btn danger" data-a="si">Sí, borrar ${n}</button></div>`;
+    d.showModal();
+    d.onclick=e=>{const b=e.target.closest('button');if(e.target===d||(b&&b.dataset.a==='no')){d.close();return}
+      if(b&&b.dataset.a==='si'){b.disabled=true;b.textContent='Borrando…';
+        api('borrar',{items}).then(r=>{d.close();if(vencida(r))return;if(!r.ok){toast('⚠️ '+r.error);return}
+          const ids=new Set(items.map(i=>i.id));for(let i=ALL.length-1;i>=0;i--)if(ids.has(ALL[i].id))ALL.splice(i,1);
+          SEL.clear();render();window.adminSel();toast('🗑️ '+r.borrados+(r.borrados===1?' producto movido':' productos movidos')+' a la papelera')})}};
+  });
+
+  // Papelera: restaurar o eliminar definitivamente
+  const PSEL=new Set();let pitems=[];
+  const pintarPapelera=()=>{const d=$a('adm-papelera');const n=PSEL.size;
+    d.innerHTML=`<div class="adm-ph"><h3 id="adm-pt">🗑️ Papelera <small>${pitems.length}</small></h3><button class="adm-x" data-a="cerrar" aria-label="Cerrar">×</button></div>
+      ${pitems.length?`<div class="adm-ptools"><button class="adm-btn" data-a="todos">${n===pitems.length?'Quitar selección':'Seleccionar todos'}</button>
+        <button class="adm-btn" data-a="rest" ${n?'':'disabled'}>↩️ Restaurar ${n||''}</button><button class="adm-btn danger" data-a="vaciar" ${n?'':'disabled'}>Eliminar definitivamente ${n||''}</button></div>
+      <div class="adm-plist">${pitems.map(p=>`<button class="adm-pitem${PSEL.has(p.pid)?' sel':''}" data-id="${esc(p.pid)}"><span class="chk"></span>${p.img?`<img src="${esc(p.img)}" alt="" loading="lazy">`:'<i></i>'}<span><b>${esc(p.name)}</b><small>${esc((CATS.find(c=>c.id===p.cat)||{}).label||'')} · borrado ${new Date(p.ts).toLocaleString('es-CO',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</small></span></button>`).join('')}</div>`
+      :'<p class="adm-empty">La papelera está vacía.</p>'}`};
+  const abrirPapelera=()=>api('papelera').then(r=>{if(vencida(r))return;pitems=r.items||[];PSEL.clear();pintarPapelera();const d=$a('adm-papelera');if(!d.open)d.showModal()});
+  $a('adm-trash').addEventListener('click',abrirPapelera);
+  $a('adm-papelera').addEventListener('click',e=>{const d=$a('adm-papelera');
+    if(e.target===d){d.close();return}
+    const it=e.target.closest('.adm-pitem');if(it){const id=it.dataset.id;PSEL.has(id)?PSEL.delete(id):PSEL.add(id);pintarPapelera();return}
+    const b=e.target.closest('button[data-a]');if(!b)return;const a=b.dataset.a;const ids=[...PSEL];
+    if(a==='cerrar')d.close();
+    else if(a==='todos'){if(PSEL.size===pitems.length)PSEL.clear();else pitems.forEach(p=>PSEL.add(p.pid));pintarPapelera()}
+    else if(a==='rest'){b.disabled=true;api('restaurar',{ids}).then(r=>{if(vencida(r))return;if(!r.ok){toast('⚠️ '+r.error);return}
+      toast('↩️ '+ids.length+(ids.length===1?' producto restaurado':' productos restaurados'));cargar().then(()=>{render();abrirPapelera()})})}
+    else if(a==='vaciar'){
+      if(b.dataset.ok!=='1'){b.dataset.ok='1';b.textContent='¿Seguro? Toca otra vez para eliminar '+ids.length+' para siempre';return}
+      b.disabled=true;api('vaciar',{ids}).then(r=>{if(vencida(r))return;if(!r.ok){toast('⚠️ '+r.error);return}toast('Eliminados definitivamente: '+ids.length);abrirPapelera()})}
+  });
+}
 })();
 </script>
 </body>
