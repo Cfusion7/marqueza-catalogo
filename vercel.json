@@ -1,3 +1,7 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "redirects": [
+    { "source": "/", "destination": "https://marqueza-catalogo.juamdie123.workers.dev/", "permanent": false },
+    { "source": "/:path*", "destination": "https://marqueza-catalogo.juamdie123.workers.dev/:path*", "permanent": false }
+  ]
 }
